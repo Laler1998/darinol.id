@@ -1797,10 +1797,10 @@ function DetailPanel({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="glass-card flex min-h-[620px] flex-col overflow-hidden rounded-[2rem] md:min-h-0"
+      className="glass-card rounded-[2rem]"
     >
-      <div className="flex min-h-0 flex-1 flex-col p-4 md:p-6">
-        <div className="mb-5 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between xl:mb-4">
+      <div className="p-4 md:p-6">
+        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between xl:mb-6">
           <div>
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-darinol-primary/10 px-3 py-1 text-xs font-semibold text-darinol-primary">
@@ -1846,215 +1846,13 @@ function DetailPanel({
           ))}
         </div>
 
-        <div className="hidden min-h-0 flex-1 grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] gap-4 xl:gap-5 lg:grid">
-          <div className="min-h-0 overflow-y-auto pr-1">{insightContent}</div>
-          <div className="min-h-0 overflow-y-auto pr-1">{contentContent}</div>
+        <div className="hidden grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] items-start gap-4 xl:gap-5 lg:grid">
+          <div>{insightContent}</div>
+          <div>{contentContent}</div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto lg:hidden">
-        {activeTab === "Insight" ? (
-          <div className="space-y-6">
-            <section>
-              <h3 className="mb-3 font-heading text-lg font-semibold text-darinol-text">
-                {t.whyViral}
-              </h3>
-              <ul className="space-y-3">
-                {topic.whyViral.map((reason) => (
-                  <li
-                    key={reason}
-                    className="flex gap-3 text-sm leading-relaxed text-darinol-muted"
-                  >
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-darinol-primary" />
-                    {reason}
-                  </li>
-                ))}
-              </ul>
-            </section>
-
-            <section>
-              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="font-heading text-lg font-semibold text-darinol-text">
-                    {t.relatedNews}
-                  </h3>
-                  <p className="mt-1 text-xs font-medium text-darinol-muted">
-                    {t.markNews}
-                  </p>
-                </div>
-                {topic.articles.length ? (
-                  <span className="w-fit rounded-full bg-darinol-primary/10 px-3 py-1 text-xs font-semibold text-darinol-primary">
-                    {selectedArticleCount} {t.materials}
-                  </span>
-                ) : null}
-              </div>
-              {topic.articles.length ? (
-                <div className="space-y-3">
-                  {topic.articles.slice(0, 5).map((article) => {
-                    const selected = selectedArticleUrls.includes(article.url);
-
-                    return (
-                    <article
-                      key={`${article.source}-${article.url}`}
-                      className={[
-                        "rounded-2xl border px-4 py-3 transition",
-                        selected
-                          ? "border-darinol-primary bg-darinol-primary/5"
-                          : "glass-soft hover:border-darinol-primary/35",
-                      ].join(" ")}
-                    >
-                      <div className="flex items-start gap-3">
-                        <button
-                          type="button"
-                          onClick={() => onToggleArticle(article.url)}
-                          className={[
-                            "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition",
-                            selected
-                              ? "border-darinol-primary bg-darinol-primary text-white"
-                              : "border-darinol-border bg-darinol-surface text-transparent hover:border-darinol-primary",
-                          ].join(" ")}
-                          aria-label={`Pakai artikel ${article.title}`}
-                        >
-                          {selected ? (
-                            <svg
-                              aria-hidden="true"
-                              className="h-3.5 w-3.5"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="m5 12 4 4L19 6" />
-                            </svg>
-                          ) : null}
-                        </button>
-                        <div className="min-w-0 flex-1">
-                          <button
-                            type="button"
-                            onClick={() => onToggleArticle(article.url)}
-                            className="block text-left text-sm font-semibold leading-relaxed text-darinol-text"
-                          >
-                            {article.title}
-                          </button>
-                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-medium text-darinol-muted">
-                            <span>
-                              {article.source} - {formatArticleTime(article.publishedAt)}
-                            </span>
-                            <a
-                              href={article.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="font-semibold text-darinol-primary hover:underline"
-                            >
-                              {t.openSource}
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    </article>
-                  )})}
-                  <button
-                    type="button"
-                    onClick={onCreateContent}
-                    disabled={!selectedArticleCount}
-                    className={[
-                      "h-12 w-full rounded-full px-5 text-sm font-semibold transition",
-                      selectedArticleCount
-                        ? "bg-darinol-primary text-white hover:brightness-105"
-                        : "cursor-not-allowed bg-darinol-surface text-darinol-muted",
-                    ].join(" ")}
-                  >
-                    {selectedArticleCount
-                      ? `${t.createContent} (${selectedArticleCount})`
-                      : t.markToCreate}
-                  </button>
-                </div>
-              ) : (
-                <p className="glass-soft rounded-2xl px-4 py-3 text-sm text-darinol-muted">
-                  {t.noSource}
-                </p>
-              )}
-            </section>
-          </div>
-        ) : contentLoading ? (
-          <ContentLoadingState t={t} />
-        ) : !hasSelectedArticles ? (
-          <ContentEmptyState onBackToInsight={() => onTabChange("Insight")} t={t} />
-        ) : (
-          <div className="space-y-5">
-            <SpecialistChat
-              topic={topic}
-              selectedArticles={selectedArticles}
-              platform={specialistPlatform}
-              outputFormat={specialistOutputFormat}
-              t={t}
-              onPlatformChange={onSpecialistPlatformChange}
-              onOutputFormatChange={onSpecialistOutputFormatChange}
-              messages={specialistMessages}
-              input={specialistInput}
-              onInputChange={onSpecialistInputChange}
-              onSubmit={onSpecialistSubmit}
-              onQuickPrompt={onSpecialistQuickPrompt}
-              loading={specialistLoading}
-            />
-
-            <section className="glass-card rounded-3xl p-4">
-              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="font-heading text-lg font-semibold text-darinol-text">
-                    {t.contentDirection}
-                  </h3>
-                  <p className="mt-1 text-sm text-darinol-muted">
-                    {t.directionHint}
-                  </p>
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {creatorModes.map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => onCreatorModeChange(mode)}
-                      className={[
-                        "shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition",
-                        creatorMode === mode
-                          ? "border-darinol-primary bg-darinol-primary text-white"
-                          : "border-darinol-border bg-darinol-surface text-darinol-muted hover:border-darinol-primary/40 hover:text-darinol-text",
-                      ].join(" ")}
-                    >
-                      {mode}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
-                <CompactTextBlock label={t.mainAngle} text={brief.angle} />
-                <CompactTextBlock label={t.openingHook} text={brief.hook} />
-              </div>
-              <p className="glass-soft mt-3 rounded-2xl px-4 py-3 text-xs font-medium leading-relaxed text-darinol-muted">
-                {t.safetyNote}: {brief.caution}
-              </p>
-            </section>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <SimpleList title={t.contentIdeas} items={articleBasedIdeas} />
-              <SimpleList title={t.readyTitles} items={articleBasedTitles} />
-            </div>
-
-            <section className="glass-card rounded-3xl p-4">
-              <h3 className="font-heading text-lg font-semibold text-darinol-text">
-                {t.quickDraft}
-              </h3>
-              <p className="mt-1 text-sm text-darinol-muted">
-                {t.draftHint}
-              </p>
-              <div className="mt-4">
-                <CompactTextBlock label={`${creatorMode} script`} text={brief.script} />
-              </div>
-            </section>
-          </div>
-        )}
-
+        <div className="lg:hidden">
+          {activeTab === "Insight" ? insightContent : contentContent}
         </div>
 
         <div className="mt-5 flex shrink-0 flex-col gap-3 border-t border-darinol-border pt-5 sm:flex-row lg:mt-4">
@@ -2417,7 +2215,7 @@ export default function Page() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-      className="flex min-h-dvh w-full flex-col px-3 py-3 sm:px-4 md:px-5 lg:h-dvh lg:px-6 lg:py-5"
+      className="mx-auto flex min-h-dvh w-full max-w-[1680px] flex-col overflow-x-hidden px-3 py-3 sm:px-4 md:px-5 lg:px-6 lg:py-5"
     >
       <Header
         search={search}
@@ -2453,9 +2251,9 @@ export default function Page() {
         variants={staggerList}
         initial="hidden"
         animate="show"
-        className="grid min-h-0 flex-1 gap-4 md:grid-cols-[minmax(300px,340px)_minmax(0,1fr)] xl:grid-cols-[minmax(330px,360px)_minmax(0,1fr)]"
+        className="grid flex-1 items-start gap-4 md:grid-cols-[minmax(300px,340px)_minmax(0,1fr)] xl:grid-cols-[minmax(330px,370px)_minmax(0,1fr)]"
       >
-        <section className="min-h-0 md:flex md:flex-col">
+        <section className="md:sticky md:top-5">
           <div className="mb-5 flex items-center justify-between gap-4">
             <h2 className="font-heading text-2xl font-semibold tracking-tight text-darinol-text">
               {t.trending}
@@ -2485,7 +2283,7 @@ export default function Page() {
 
           <motion.div
             variants={staggerList}
-            className="grid gap-3 sm:grid-cols-2 md:min-h-0 md:flex-1 md:grid-cols-1 md:overflow-y-auto md:pr-1"
+            className="grid gap-3 sm:grid-cols-2 md:grid-cols-1"
           >
             {filteredTopics.map((topic, index) => (
               <TopicCard
