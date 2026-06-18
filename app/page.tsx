@@ -2,7 +2,7 @@
 
 import { type PointerEvent, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { getCurrentUserProfile, signInWithPassword, signUpWithPassword } from "@/lib/supabase/auth";
+import { getCurrentUserProfile, sendPasswordResetEmail, signInWithPassword, signUpWithPassword, updateCurrentUserPassword } from "@/lib/supabase/auth";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type Topic = {
@@ -143,6 +143,10 @@ const copy = {
     loginPasswordPlaceholder: "Minimal 6 karakter",
     loginModeSignIn: "Masuk",
     loginModeSignUp: "Daftar",
+    forgotPassword: "Lupa password?",
+    resetPasswordTitle: "Buat password baru",
+    resetPasswordBody: "Masukkan password baru untuk akun Darinol kamu.",
+    resetPasswordCta: "Simpan password baru",
     continueFree: "Masuk sebagai Free",
     chooseStarter: "Pilih Starter",
     starterBadge: "Starter",
@@ -250,6 +254,10 @@ const copy = {
     loginPasswordPlaceholder: "At least 6 characters",
     loginModeSignIn: "Sign in",
     loginModeSignUp: "Sign up",
+    forgotPassword: "Forgot password?",
+    resetPasswordTitle: "Create a new password",
+    resetPasswordBody: "Enter a new password for your Darinol account.",
+    resetPasswordCta: "Save new password",
     continueFree: "Enter as Free",
     chooseStarter: "Choose Starter",
     starterBadge: "Starter",
@@ -798,11 +806,14 @@ function PlanPreview({
 
 function OnboardingOverlay({
   onChoosePlan,
+  onResetPassword,
+  onUpdatePassword,
   onClose,
   language,
   t,
   authMessage,
   authLoading,
+  passwordRecoveryMode,
 }: {
   onChoosePlan: (
     plan: Plan,
@@ -810,14 +821,18 @@ function OnboardingOverlay({
     password: string,
     authMode: "signin" | "signup",
   ) => void;
+  onResetPassword: (email: string) => void;
+  onUpdatePassword: (password: string) => void;
   onClose?: () => void;
   language: Language;
   t: Copy;
   authMessage: string;
   authLoading: boolean;
+  passwordRecoveryMode: boolean;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [selectedLoginPlan, setSelectedLoginPlan] = useState<LoginPlan>("Free");
   const [amount, setAmount] = useState("25000");
@@ -830,6 +845,14 @@ function OnboardingOverlay({
 
   function handleContinue() {
     onChoosePlan(selectedLoginPlan, email, password, authMode);
+  }
+
+  function handleResetPassword() {
+    onResetPassword(email);
+  }
+
+  function handleUpdatePassword() {
+    onUpdatePassword(newPassword);
   }
 
   return (
@@ -923,6 +946,16 @@ function OnboardingOverlay({
             transition={{ delay: 0.95, duration: 0.55, ease: "easeOut" }}
             className="glass-soft rounded-[1.75rem] p-4 md:p-5"
           >
+            {passwordRecoveryMode ? (
+              <div className="mb-4 rounded-3xl border border-darinol-primary/20 bg-darinol-primary/5 p-4">
+                <p className="font-heading text-lg font-semibold text-darinol-text">
+                  {t.resetPasswordTitle}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-darinol-muted">
+                  {t.resetPasswordBody}
+                </p>
+              </div>
+            ) : (
             <div className="mb-4 grid grid-cols-2 rounded-full bg-darinol-background/70 p-1">
               {(["signin", "signup"] as const).map((mode) => (
                 <button
@@ -940,8 +973,24 @@ function OnboardingOverlay({
                 </button>
               ))}
             </div>
+            )}
 
-            <label className="block">
+            {passwordRecoveryMode ? (
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+                  {t.loginPassword}
+                </span>
+                <input
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  placeholder={t.loginPasswordPlaceholder}
+                  type="password"
+                  className="mt-2 h-12 w-full rounded-2xl border border-darinol-border bg-darinol-surface/80 px-4 text-sm font-semibold text-darinol-text outline-none focus:border-darinol-primary focus:ring-4 focus:ring-darinol-primary/10"
+                />
+              </label>
+            ) : (
+            <>
+              <label className="block">
               <span className="text-xs font-semibold uppercase tracking-[0.12em] text-darinol-muted">
                 {t.loginEmail}
               </span>
@@ -952,7 +1001,7 @@ function OnboardingOverlay({
                 className="mt-2 h-12 w-full rounded-2xl border border-darinol-border bg-darinol-surface/80 px-4 text-sm font-semibold text-darinol-text outline-none focus:border-darinol-primary focus:ring-4 focus:ring-darinol-primary/10"
               />
             </label>
-            <label className="mt-3 block">
+              <label className="mt-3 block">
               <span className="text-xs font-semibold uppercase tracking-[0.12em] text-darinol-muted">
                 {t.loginPassword}
               </span>
@@ -964,7 +1013,20 @@ function OnboardingOverlay({
                 className="mt-2 h-12 w-full rounded-2xl border border-darinol-border bg-darinol-surface/80 px-4 text-sm font-semibold text-darinol-text outline-none focus:border-darinol-primary focus:ring-4 focus:ring-darinol-primary/10"
               />
             </label>
+              {authMode === "signin" ? (
+                <button
+                  type="button"
+                  onClick={handleResetPassword}
+                  disabled={authLoading}
+                  className="mt-2 text-xs font-semibold text-darinol-primary transition hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {t.forgotPassword}
+                </button>
+              ) : null}
+            </>
+            )}
 
+            {!passwordRecoveryMode ? (
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {(["Free", "Supporter"] as const).map((plan) => (
                 <button
@@ -989,8 +1051,9 @@ function OnboardingOverlay({
                 </button>
               ))}
             </div>
+            ) : null}
 
-            {selectedLoginPlan === "Supporter" ? (
+            {!passwordRecoveryMode && selectedLoginPlan === "Supporter" ? (
               <div className="mt-4 rounded-3xl border border-darinol-primary/20 bg-darinol-surface/80 p-4">
                 <div className="flex items-start gap-4">
                   <div className="grid h-28 w-28 shrink-0 place-items-center rounded-2xl border border-darinol-border bg-white p-3">
@@ -1029,12 +1092,14 @@ function OnboardingOverlay({
 
             <button
               type="button"
-              onClick={handleContinue}
+              onClick={passwordRecoveryMode ? handleUpdatePassword : handleContinue}
               disabled={authLoading}
               className="orange-gradient moving-accent mt-5 h-12 w-full rounded-full px-5 text-sm font-semibold text-white transition hover:brightness-105"
             >
               {authLoading
                 ? "Menghubungkan..."
+                : passwordRecoveryMode
+                  ? t.resetPasswordCta
                 : selectedLoginPlan === "Free"
                   ? t.continueFree
                   : t.payContinue}
@@ -2407,9 +2472,10 @@ export default function Page() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [authMessage, setAuthMessage] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(false);
   const [accountEmail, setAccountEmail] = useState("");
   const t = copy[language];
-  const onboardingOpen = !appBooting && (!selectedPlan || accountOpen) && !paymentOpen;
+  const onboardingOpen = !appBooting && (!selectedPlan || accountOpen || passwordRecoveryMode) && !paymentOpen;
 
   async function syncAccountProfile(options: { showMessage?: boolean } = {}) {
     if (!isSupabaseConfigured) {
@@ -2504,8 +2570,13 @@ export default function Page() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((event) => {
       if (!active) return;
+      if (event === "PASSWORD_RECOVERY") {
+        setPasswordRecoveryMode(true);
+        setAccountOpen(true);
+        setAuthMessage("Silakan buat password baru untuk akun kamu.");
+      }
       void syncAccountProfile();
     });
 
@@ -2840,6 +2911,48 @@ export default function Page() {
     setAccountOpen(false);
     setPaymentOpen(false);
     setUpgradeNotice(false);
+  }
+
+  async function handleResetPassword(email = "") {
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail) {
+      setAuthMessage("Isi email kamu dulu, lalu klik lupa password.");
+      return;
+    }
+
+    setAuthLoading(true);
+
+    try {
+      const result = await sendPasswordResetEmail(cleanEmail, window.location.origin);
+      setAuthMessage(result.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleUpdatePassword(password = "") {
+    const cleanPassword = password.trim();
+
+    if (cleanPassword.length < 6) {
+      setAuthMessage("Password baru minimal 6 karakter.");
+      return;
+    }
+
+    setAuthLoading(true);
+
+    try {
+      const result = await updateCurrentUserPassword(cleanPassword);
+      setAuthMessage(result.message);
+
+      if (result.ok) {
+        setPasswordRecoveryMode(false);
+        setAccountOpen(false);
+        void syncAccountProfile();
+      }
+    } finally {
+      setAuthLoading(false);
+    }
   }
 
   function handlePaymentComplete() {
@@ -3187,11 +3300,17 @@ export default function Page() {
       {onboardingOpen ? (
         <OnboardingOverlay
           onChoosePlan={handleChoosePlan}
-          onClose={selectedPlan ? () => setAccountOpen(false) : undefined}
+          onResetPassword={handleResetPassword}
+          onUpdatePassword={handleUpdatePassword}
+          onClose={selectedPlan || passwordRecoveryMode ? () => {
+            setAccountOpen(false);
+            setPasswordRecoveryMode(false);
+          } : undefined}
           language={language}
           t={t}
           authMessage={authMessage}
           authLoading={authLoading}
+          passwordRecoveryMode={passwordRecoveryMode}
         />
       ) : null}
     </motion.main>

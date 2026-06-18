@@ -135,6 +135,72 @@ export async function signInWithPassword(email: string, password: string) {
   };
 }
 
+export async function sendPasswordResetEmail(email: string, redirectTo: string) {
+  if (!isSupabaseConfigured) {
+    return {
+      ok: false,
+      message: "Supabase belum dikonfigurasi.",
+    };
+  }
+
+  const supabase = getSupabaseBrowserClient();
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo,
+  }).catch((error: unknown) => ({
+    error: {
+      message: friendlyUnexpectedAuthMessage(error),
+    },
+  }));
+
+  if (error) {
+    const authError = error as { message: string; code?: string; status?: number };
+
+    return {
+      ok: false,
+      message: friendlyAuthMessage(authError.message, authError.code, authError.status),
+    };
+  }
+
+  return {
+    ok: true,
+    message: "Link reset password sudah dikirim. Cek inbox atau spam email kamu.",
+  };
+}
+
+export async function updateCurrentUserPassword(password: string) {
+  if (!isSupabaseConfigured) {
+    return {
+      ok: false,
+      message: "Supabase belum dikonfigurasi.",
+    };
+  }
+
+  const supabase = getSupabaseBrowserClient();
+
+  const { error } = await supabase.auth.updateUser({
+    password,
+  }).catch((error: unknown) => ({
+    error: {
+      message: friendlyUnexpectedAuthMessage(error),
+    },
+  }));
+
+  if (error) {
+    const authError = error as { message: string; code?: string; status?: number };
+
+    return {
+      ok: false,
+      message: friendlyAuthMessage(authError.message, authError.code, authError.status),
+    };
+  }
+
+  return {
+    ok: true,
+    message: "Password baru sudah tersimpan. Kamu bisa login lagi di device lain.",
+  };
+}
+
 export async function getCurrentUserProfile(): Promise<ProfilePreview | null> {
   if (!isSupabaseConfigured) return null;
 
