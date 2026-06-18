@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchYouTubeCultureTrends, sampleCultureTrends } from "@/lib/culture-trends";
 
-export async function POST() {
+async function handleYouTubeCultureFetch() {
   const apiKey = process.env.YOUTUBE_API_KEY;
 
   if (!apiKey) {
@@ -17,14 +17,32 @@ export async function POST() {
     });
   }
 
-  const topics = await fetchYouTubeCultureTrends().catch(() => []);
+  try {
+    const topics = await fetchYouTubeCultureTrends();
 
-  return NextResponse.json({
-    source: topics.length ? "youtube-most-popular" : "youtube-fallback",
-    status: topics.length ? "live" : "fallback",
-    note: topics.length
-      ? "Fetched from YouTube Data API most popular videos for Indonesia."
-      : "YouTube Data API did not return culture trends. Returning sample placeholder culture trends.",
-    topics: topics.length ? topics : sampleCultureTrends,
-  });
+    return NextResponse.json({
+      source: topics.length ? "youtube-most-popular" : "youtube-fallback",
+      status: topics.length ? "live" : "fallback",
+      note: topics.length
+        ? "Fetched from YouTube Data API most popular videos for Indonesia."
+        : "YouTube Data API returned no videos. Returning sample placeholder culture trends.",
+      topics: topics.length ? topics : sampleCultureTrends,
+    });
+  } catch (error) {
+    return NextResponse.json({
+      source: "youtube-error-fallback",
+      status: "fallback",
+      note: "YouTube Data API request failed. Returning sample placeholder culture trends.",
+      error: error instanceof Error ? error.message : "Unknown YouTube API error",
+      topics: sampleCultureTrends,
+    });
+  }
+}
+
+export async function GET() {
+  return handleYouTubeCultureFetch();
+}
+
+export async function POST() {
+  return handleYouTubeCultureFetch();
 }
