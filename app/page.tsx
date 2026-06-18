@@ -2411,11 +2411,43 @@ export default function Page() {
   const t = copy[language];
   const onboardingOpen = !appBooting && (!selectedPlan || accountOpen) && !paymentOpen;
 
+  async function syncAccountProfile(options: { showMessage?: boolean } = {}) {
+    if (!isSupabaseConfigured) {
+      setSelectedPlan(null);
+      setAccountEmail("");
+      return null;
+    }
+
+    const profile = await getCurrentUserProfile();
+
+    if (!profile) {
+      setSelectedPlan(null);
+      setAccountEmail("");
+      return null;
+    }
+
+    const nextPlan = profile.plan === "free" ? "Free" : "Supporter";
+    const profileEmail = profile.email ?? "";
+
+    setSelectedPlan(nextPlan);
+    setAccountEmail(profileEmail);
+
+    if (options.showMessage) {
+      setAuthMessage(
+        profile.plan === "free"
+          ? "Akun Free aktif dari Supabase."
+          : "Akun Starter aktif dari Supabase.",
+      );
+    }
+
+    return profile;
+  }
+
   useEffect(() => {
     const storedLanguage = window.localStorage.getItem("darinol-language");
     const storedTheme = window.localStorage.getItem("darinol-theme");
-    const storedPlan = window.localStorage.getItem("darinol-plan");
-    const storedEmail = window.localStorage.getItem("darinol-email");
+    window.localStorage.removeItem("darinol-plan");
+    window.localStorage.removeItem("darinol-email");
 
     if (storedLanguage === "id" || storedLanguage === "en") {
       setLanguage(storedLanguage);
@@ -2423,14 +2455,6 @@ export default function Page() {
 
     if (storedTheme === "light" || storedTheme === "dark") {
       setThemeMode(storedTheme);
-    }
-
-    if (storedPlan === "Free" || storedPlan === "Supporter") {
-      setSelectedPlan(storedPlan);
-    }
-
-    if (storedEmail) {
-      setAccountEmail(storedEmail);
     }
 
     const timer = window.setTimeout(() => {
@@ -2476,33 +2500,13 @@ export default function Page() {
     const supabase = getSupabaseBrowserClient();
     let active = true;
 
-    async function syncProfile() {
-      const profile = await getCurrentUserProfile();
-
-      if (!active || !profile) return;
-
-      const nextPlan = profile.plan === "free" ? "Free" : "Supporter";
-      const profileEmail = profile.email ?? "";
-
-      setSelectedPlan(nextPlan);
-      setAccountEmail(profileEmail);
-      window.localStorage.setItem("darinol-plan", nextPlan);
-      if (profileEmail) {
-        window.localStorage.setItem("darinol-email", profileEmail);
-      }
-      setAuthMessage(
-        profile.plan === "free"
-          ? "Supabase tersambung. Akun Free aktif."
-          : "Supabase tersambung. Akun Starter aktif.",
-      );
-    }
-
-    void syncProfile();
+    void syncAccountProfile();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
-      void syncProfile();
+      if (!active) return;
+      void syncAccountProfile();
     });
 
     return () => {
@@ -2805,6 +2809,17 @@ export default function Page() {
         );
 
         if (!result.ok) return;
+
+        const profile = await syncAccountProfile();
+
+        if (!profile) {
+          setAuthMessage(
+            authMode === "signup"
+              ? "Akun berhasil dibuat, tapi email mungkin perlu dikonfirmasi dulu sebelum bisa masuk di device lain."
+              : "Login berhasil, tapi profile akun belum terbaca. Coba refresh sebentar lagi.",
+          );
+          return;
+        }
       } finally {
         setAuthLoading(false);
       }
@@ -2814,21 +2829,21 @@ export default function Page() {
       setAuthMessage("Email kosong. Masuk demo dulu.");
     }
 
-    if (cleanEmail) {
-      setAccountEmail(cleanEmail);
-      window.localStorage.setItem("darinol-email", cleanEmail);
+    if (!isSupabaseConfigured) {
+      if (cleanEmail) {
+        setAccountEmail(cleanEmail);
+      }
+
+      setSelectedPlan(plan);
     }
 
-    setSelectedPlan(plan);
-    window.localStorage.setItem("darinol-plan", plan);
     setAccountOpen(false);
     setPaymentOpen(false);
     setUpgradeNotice(false);
   }
 
   function handlePaymentComplete() {
-    setSelectedPlan("Supporter");
-    window.localStorage.setItem("darinol-plan", "Supporter");
+    setAuthMessage("Pembayaran dicatat manual. Plan akan berubah setelah admin update di Supabase.");
     setPaymentOpen(false);
     setUpgradeNotice(false);
   }
