@@ -2960,7 +2960,7 @@ export default function Page() {
 
   useEffect(() => {
     let active = true;
-    const cacheKey = `darinol-trends-cache-${activeRadar}`;
+    const cacheKey = `darinol-trends-cache-v2-${activeRadar}`;
 
     function applyTrends(payload: TrendsPayload) {
       if (!active || !payload.topics?.length) return;

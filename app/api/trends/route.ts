@@ -87,10 +87,16 @@ function fallbackArticle(title: string, source: string, query: string): TopicArt
 
 function trendsJson(payload: unknown, init?: ResponseInit) {
   const response = NextResponse.json(payload, init);
+  const payloadRadarType =
+    payload && typeof payload === "object" && "radar_type" in payload
+      ? payload.radar_type
+      : null;
 
   response.headers.set(
     "Cache-Control",
-    "public, s-maxage=300, stale-while-revalidate=900",
+    payloadRadarType === "culture"
+      ? "no-store"
+      : "public, s-maxage=300, stale-while-revalidate=900",
   );
 
   return response;

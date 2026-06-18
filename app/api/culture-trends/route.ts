@@ -15,5 +15,9 @@ export async function GET() {
     youtube_count: payload.youtube_count,
     reddit_count: payload.reddit_count,
     topics: payload.topics,
+  }, {
+    headers: {
+      "Cache-Control": "no-store",
+    },
   });
 }

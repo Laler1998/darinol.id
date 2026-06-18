@@ -14,6 +14,10 @@ async function handleYouTubeCultureFetch() {
           trend.culture_category,
         ),
       ),
+    }, {
+      headers: {
+        "Cache-Control": "no-store",
+      },
     });
   }
 
@@ -27,6 +31,10 @@ async function handleYouTubeCultureFetch() {
         ? "Fetched from YouTube Data API most popular videos for Indonesia."
         : "YouTube Data API returned no videos. Returning sample placeholder culture trends.",
       topics: topics.length ? topics : sampleCultureTrends,
+    }, {
+      headers: {
+        "Cache-Control": "no-store",
+      },
     });
   } catch (error) {
     return NextResponse.json({
@@ -35,6 +43,10 @@ async function handleYouTubeCultureFetch() {
       note: "YouTube Data API request failed. Returning sample placeholder culture trends.",
       error: error instanceof Error ? error.message : "Unknown YouTube API error",
       topics: sampleCultureTrends,
+    }, {
+      headers: {
+        "Cache-Control": "no-store",
+      },
     });
   }
 }
