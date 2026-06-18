@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchRssArticles } from "@/lib/rss";
+import { sampleCultureTrends, type RadarType } from "@/lib/culture-trends";
 
 type NewsArticle = {
   source?: { name?: string | null };
@@ -51,6 +52,13 @@ type Topic = {
   id: string;
   name: string;
   category: string;
+  radar_type: RadarType;
+  culture_category?: string | null;
+  source?: string;
+  culture_score?: number;
+  opportunity_score?: number | null;
+  competition_score?: number | null;
+  is_sample?: boolean;
   score: number;
   growth: string;
   whyViral: string[];
@@ -93,6 +101,7 @@ const fallbackTopics: Topic[] = [
     id: "demo",
     name: "Demo",
     category: "Peristiwa",
+    radar_type: "news",
     score: 99,
     growth: "+380%",
     whyViral: [
@@ -120,6 +129,7 @@ const fallbackTopics: Topic[] = [
     id: "ai-video",
     name: "AI Video",
     category: "Technology",
+    radar_type: "news",
     score: 96,
     growth: "+310%",
     whyViral: [
@@ -147,6 +157,7 @@ const fallbackTopics: Topic[] = [
     id: "rupiah",
     name: "Rupiah",
     category: "Business",
+    radar_type: "news",
     score: 91,
     growth: "+220%",
     whyViral: [
@@ -174,6 +185,7 @@ const fallbackTopics: Topic[] = [
     id: "timnas-indonesia",
     name: "Timnas Indonesia",
     category: "Sports",
+    radar_type: "news",
     score: 89,
     growth: "+205%",
     whyViral: [
@@ -201,6 +213,7 @@ const fallbackTopics: Topic[] = [
     id: "bitcoin",
     name: "Bitcoin",
     category: "Crypto",
+    radar_type: "news",
     score: 92,
     growth: "+320%",
     whyViral: [
@@ -228,6 +241,7 @@ const fallbackTopics: Topic[] = [
     id: "prabowo",
     name: "Prabowo",
     category: "Politics",
+    radar_type: "news",
     score: 86,
     growth: "+175%",
     whyViral: [
@@ -255,6 +269,7 @@ const fallbackTopics: Topic[] = [
     id: "google",
     name: "Google",
     category: "Technology",
+    radar_type: "news",
     score: 84,
     growth: "+160%",
     whyViral: [
@@ -282,6 +297,7 @@ const fallbackTopics: Topic[] = [
     id: "film-indonesia",
     name: "Film Indonesia",
     category: "Entertainment",
+    radar_type: "news",
     score: 81,
     growth: "+140%",
     whyViral: [
@@ -309,6 +325,7 @@ const fallbackTopics: Topic[] = [
     id: "gaza",
     name: "Gaza",
     category: "Global",
+    radar_type: "news",
     score: 80,
     growth: "+130%",
     whyViral: [
@@ -948,6 +965,7 @@ function buildTopics(articles: NewsArticle[]) {
         id: slugify(group.name),
         name: group.name,
         category: group.category,
+        radar_type: "news",
         score,
         growth,
         whyViral: [
@@ -1004,7 +1022,46 @@ function buildTopics(articles: NewsArticle[]) {
     .slice(0, 28);
 }
 
-export async function GET() {
+function filterTopicsByRadar(topics: Topic[], radarType: RadarType | "all") {
+  if (radarType === "all") return topics;
+  return topics.filter((topic) => topic.radar_type === radarType);
+}
+
+function getRadarType(request: Request): RadarType | "all" {
+  const value = new URL(request.url).searchParams.get("radar_type");
+
+  if (value === "news" || value === "culture") return value;
+  return "all";
+}
+
+function buildTrendsPayload({
+  source,
+  topics,
+  radarType,
+  error,
+}: {
+  source: string;
+  topics: Topic[];
+  radarType: RadarType | "all";
+  error?: string;
+}) {
+  const mixedTopics = radarType === "culture"
+    ? sampleCultureTrends
+    : radarType === "all"
+      ? [...sampleCultureTrends, ...topics]
+      : topics;
+
+  return {
+    source: radarType === "culture" ? "sample-culture-placeholder" : source,
+    updatedAt: new Date().toISOString(),
+    radar_type: radarType,
+    error,
+    topics: filterTopicsByRadar(mixedTopics as Topic[], radarType),
+  };
+}
+
+export async function GET(request: Request) {
+  const radarType = getRadarType(request);
   const apiKey = process.env.NEWS_API_KEY;
   const country = process.env.NEWS_COUNTRY ?? "id";
   const pageSize = process.env.NEWS_PAGE_SIZE ?? "40";
@@ -1016,11 +1073,13 @@ export async function GET() {
     ]);
     const topics = buildTopics([...rssArticles, ...fastSignalArticles]);
 
-    return trendsJson({
+    const newsTopics = topics.length ? topics : fallbackTopics;
+
+    return trendsJson(buildTrendsPayload({
       source: topics.length ? "fast-free" : "fallback",
-      updatedAt: new Date().toISOString(),
-      topics: topics.length ? topics : fallbackTopics,
-    });
+      topics: newsTopics,
+      radarType,
+    }));
   }
 
   try {
@@ -1080,7 +1139,7 @@ export async function GET() {
     const articles = [...newsApiArticles, ...rssArticles, ...fastSignalArticles];
     const topics = buildTopics(articles);
 
-    return trendsJson({
+    return trendsJson(buildTrendsPayload({
       source: topics.length
         ? fastSignalArticles.length
           ? newsApiArticles.length
@@ -1092,9 +1151,9 @@ export async function GET() {
               ? "rss"
               : "newsapi"
         : "fallback",
-      updatedAt: new Date().toISOString(),
       topics: topics.length ? topics : fallbackTopics,
-    });
+      radarType,
+    }));
   } catch (error) {
     const [rssArticles, fastSignalArticles] = await Promise.all([
       fetchRssArticles().catch(() => []),
@@ -1106,16 +1165,26 @@ export async function GET() {
       return trendsJson({
         source: fastSignalArticles.length ? "fast-free" : "rss",
         updatedAt: new Date().toISOString(),
-        topics,
+        radar_type: radarType,
+        topics: filterTopicsByRadar(
+          (radarType === "culture"
+            ? sampleCultureTrends
+            : radarType === "all"
+              ? [...sampleCultureTrends, ...topics]
+              : topics) as Topic[],
+          radarType,
+        ),
       });
     }
 
     return trendsJson(
       {
-        source: "fallback",
-        updatedAt: new Date().toISOString(),
-        error: error instanceof Error ? error.message : "Unknown news fetch error",
-        topics: fallbackTopics,
+        ...buildTrendsPayload({
+          source: "fallback",
+          topics: fallbackTopics,
+          radarType,
+          error: error instanceof Error ? error.message : "Unknown news fetch error",
+        }),
       },
       { status: 200 },
     );

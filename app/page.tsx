@@ -9,6 +9,13 @@ type Topic = {
   id: string;
   name: string;
   category: string;
+  radar_type: "news" | "culture";
+  culture_category?: string | null;
+  source?: string;
+  culture_score?: number;
+  opportunity_score?: number | null;
+  competition_score?: number | null;
+  is_sample?: boolean;
   score: number;
   growth: string;
   whyViral: string[];
@@ -65,6 +72,14 @@ const copy = {
     all: "Semua",
     insight: "Insight",
     content: "Konten",
+    newsRadar: "News Radar",
+    cultureRadar: "Culture Radar",
+    allRadar: "All",
+    cultureSample: "Sample data",
+    opportunityScore: "Opportunity Score",
+    cultureCategory: "Culture Category",
+    contentAngle: "Suggested Content Angle",
+    createWithRiri: "Buat Konten dengan Riri",
     viralLabel: "Sangat Viral",
     viralScore: "Viral Score",
     whyViral: "Kenapa Viral?",
@@ -187,6 +202,14 @@ const copy = {
     all: "All",
     insight: "Insight",
     content: "Content",
+    newsRadar: "News Radar",
+    cultureRadar: "Culture Radar",
+    allRadar: "All",
+    cultureSample: "Sample data",
+    opportunityScore: "Opportunity Score",
+    cultureCategory: "Culture Category",
+    contentAngle: "Suggested Content Angle",
+    createWithRiri: "Create Content with Riri",
     viralLabel: "Highly Viral",
     viralScore: "Viral Score",
     whyViral: "Why It Is Viral",
@@ -314,6 +337,21 @@ const categoryFilters = [
   "Sports",
 ];
 
+const cultureCategoryFilters = [
+  "Semua",
+  "music",
+  "meme",
+  "lifestyle",
+  "fashion",
+  "food",
+  "beauty",
+  "gaming",
+  "film",
+  "internet_slang",
+  "entertainment",
+  "creator_trend",
+];
+
 const creatorModes = [
   "Explainer",
   "Short Video",
@@ -410,9 +448,86 @@ const staggerList = {
 
 const initialTopics: Topic[] = [
   {
+    id: "pov-kerja-remote-cafe",
+    name: "POV kerja remote dari cafe",
+    category: "Culture",
+    radar_type: "culture",
+    culture_category: "lifestyle",
+    source: "Sample placeholder - manual seed",
+    score: 86,
+    growth: "+180%",
+    culture_score: 82,
+    opportunity_score: null,
+    competition_score: null,
+    is_sample: true,
+    whyViral: [
+      "Format ini naik karena relatable untuk pekerja muda dan mudah direplikasi.",
+      "Visual cafe, laptop, dan rutinitas kerja mudah dipakai untuk short video.",
+      "Bisa masuk ke angle freelancer, agency, fresh graduate, dan introvert.",
+    ],
+    ideas: [
+      "Versi anak agency",
+      "Versi freelancer",
+      "Versi fresh graduate",
+      "Versi introvert",
+    ],
+    titles: [
+      "POV Kerja Remote dari Cafe",
+      "Realita Kerja dari Cafe Seharian",
+      "Kerja Remote: Produktif atau Cuma Estetik?",
+    ],
+    articles: [
+      {
+        title: "Sample culture signal: POV kerja remote dari cafe",
+        source: "Sample placeholder",
+        url: "#",
+        publishedAt: new Date().toISOString(),
+      },
+    ],
+  },
+  {
+    id: "grwm-budget",
+    name: "GRWM budget tapi tetap rapi",
+    category: "Culture",
+    radar_type: "culture",
+    culture_category: "beauty",
+    source: "Sample placeholder - creator trend",
+    score: 82,
+    growth: "+145%",
+    culture_score: 74,
+    opportunity_score: null,
+    competition_score: null,
+    is_sample: true,
+    whyViral: [
+      "Format GRWM terasa personal dan mudah dibuat harian.",
+      "Angle budget cocok dengan audiens yang sensitif harga.",
+      "Bisa digabung dengan fashion, beauty, dan lifestyle creator.",
+    ],
+    ideas: [
+      "GRWM interview kerja",
+      "GRWM ke kantor tanpa mahal",
+      "GRWM first date low budget",
+      "GRWM creator pemula",
+    ],
+    titles: [
+      "GRWM Budget tapi Tetap Rapi",
+      "Tampil Proper Tanpa Keluar Banyak",
+      "Starter Pack GRWM Low Budget",
+    ],
+    articles: [
+      {
+        title: "Sample culture signal: GRWM low budget",
+        source: "Sample placeholder",
+        url: "#",
+        publishedAt: new Date().toISOString(),
+      },
+    ],
+  },
+  {
     id: "bitcoin",
     name: "Bitcoin",
     category: "Crypto",
+    radar_type: "news",
     score: 92,
     growth: "+320%",
     whyViral: [
@@ -437,6 +552,7 @@ const initialTopics: Topic[] = [
     id: "timnas-indonesia",
     name: "Timnas Indonesia",
     category: "Sports",
+    radar_type: "news",
     score: 88,
     growth: "+240%",
     whyViral: [
@@ -461,6 +577,7 @@ const initialTopics: Topic[] = [
     id: "ai-video",
     name: "AI Video",
     category: "Technology",
+    radar_type: "news",
     score: 84,
     growth: "+180%",
     whyViral: [
@@ -485,6 +602,7 @@ const initialTopics: Topic[] = [
     id: "film-indonesia",
     name: "Film Indonesia",
     category: "Entertainment",
+    radar_type: "news",
     score: 81,
     growth: "+140%",
     whyViral: [
@@ -509,6 +627,7 @@ const initialTopics: Topic[] = [
     id: "prabowo",
     name: "Prabowo",
     category: "Politics",
+    radar_type: "news",
     score: 79,
     growth: "+120%",
     whyViral: [
@@ -696,7 +815,9 @@ function TopicCard({
   selected: boolean;
   onClick: () => void;
 }) {
+  const isCulture = topic.radar_type === "culture";
   const momentumLabel = topic.score >= 90 ? "Sangat viral" : topic.score >= 82 ? "Naik cepat" : "Mulai ramai";
+  const primarySource = topic.source ?? topic.articles[0]?.source ?? "Darinol Radar";
 
   return (
     <motion.button
@@ -733,7 +854,7 @@ function TopicCard({
                 : "bg-darinol-primary/10 text-darinol-primary",
             ].join(" ")}
           >
-            {topic.category}
+            {isCulture ? topic.culture_category?.replace("_", " ") ?? "culture" : topic.category}
           </span>
         </div>
         <span
@@ -742,13 +863,21 @@ function TopicCard({
             selected ? "text-white/90" : "text-darinol-muted",
           ].join(" ")}
         >
-          Score {topic.score}
+          {isCulture ? `Opp ${topic.opportunity_score ?? "TBD"}` : `Score ${topic.score}`}
         </span>
       </div>
 
       <h3 className="font-heading text-base font-semibold tracking-tight">
         {topic.name}
       </h3>
+      <p
+        className={[
+          "mt-2 line-clamp-2 text-xs font-medium",
+          selected ? "text-white/75" : "text-darinol-muted",
+        ].join(" ")}
+      >
+        {primarySource}
+      </p>
       <div className="mt-3 flex items-center justify-between gap-3">
         <div>
           <p
@@ -765,7 +894,7 @@ function TopicCard({
               selected ? "text-white/70" : "text-darinol-muted",
             ].join(" ")}
           >
-            {momentumLabel}
+            {isCulture ? `Culture ${topic.culture_score ?? topic.score}` : momentumLabel}
           </p>
         </div>
         <div className="h-1.5 w-20 overflow-hidden rounded-full bg-black/10">
@@ -2680,6 +2809,7 @@ export default function Page() {
   const [topics, setTopics] = useState<Topic[]>(initialTopics);
   const [selectedId, setSelectedId] = useState(initialTopics[0].id);
   const [search, setSearch] = useState("");
+  const [activeRadar, setActiveRadar] = useState<"news" | "culture" | "all">("culture");
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [activeMainView, setActiveMainView] = useState<MainView>("Berita");
   const [creatorMode, setCreatorMode] = useState(creatorModes[0]);
@@ -2824,7 +2954,7 @@ export default function Page() {
 
   useEffect(() => {
     let active = true;
-    const cacheKey = "darinol-trends-cache";
+    const cacheKey = `darinol-trends-cache-${activeRadar}`;
 
     function applyTrends(payload: TrendsPayload) {
       if (!active || !payload.topics?.length) return;
@@ -2833,7 +2963,8 @@ export default function Page() {
       setSelectedId((currentId) =>
         payload.topics.some((topic) => topic.id === currentId)
           ? currentId
-          : payload.topics[0].id,
+          : payload.topics.find((topic) => activeRadar === "all" || topic.radar_type === activeRadar)?.id ??
+            payload.topics[0].id,
       );
       setUpdatedAt(formatUpdatedAt(payload.updatedAt));
     }
@@ -2855,7 +2986,7 @@ export default function Page() {
           }
         }
 
-        const response = await fetch("/api/trends");
+        const response = await fetch(`/api/trends?radar_type=${activeRadar}`);
         const payload = (await response.json()) as TrendsPayload;
 
         if (!active) return;
@@ -2878,26 +3009,34 @@ export default function Page() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeRadar]);
 
   const filteredTopics = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return topics.filter((topic) => {
-      const searchable = `${topic.name} ${topic.category}`.toLowerCase();
+      const matchesRadar = activeRadar === "all" || topic.radar_type === activeRadar;
+      const searchable = `${topic.name} ${topic.category} ${topic.culture_category ?? ""}`.toLowerCase();
       const matchesSearch = searchable.includes(query);
       const matchesCategory =
-        activeCategory === "Semua" || topic.category === activeCategory;
+        activeCategory === "Semua" ||
+        topic.category === activeCategory ||
+        topic.culture_category === activeCategory;
 
-      return matchesSearch && matchesCategory;
+      return matchesRadar && matchesSearch && matchesCategory;
     });
-  }, [activeCategory, search, topics]);
+  }, [activeCategory, activeRadar, search, topics]);
 
   const selectedTopic =
-    topics.find((topic) => topic.id === selectedId) ?? topics[0];
+    filteredTopics.find((topic) => topic.id === selectedId) ??
+    filteredTopics[0] ??
+    topics.find((topic) => activeRadar === "all" || topic.radar_type === activeRadar) ??
+    topics[0];
   const selectedArticleUrls = selectedArticleUrlsByTopic[selectedTopic.id] ?? [];
   const selectedArticles = getSelectedArticles(selectedTopic, selectedArticleUrls);
   const hotNewsItems = useMemo(() => getHotNewsItems(topics), [topics]);
+  const currentCategoryFilters =
+    activeRadar === "culture" ? cultureCategoryFilters : categoryFilters;
   const visibleTopics = isMobile ? filteredTopics.slice(0, 8) : filteredTopics;
   const visibleArticles = isMobile
     ? selectedTopic.articles.slice(0, 6)
@@ -3167,6 +3306,15 @@ export default function Page() {
     }
   }
 
+  function handleSelectRadar(radar: "news" | "culture" | "all") {
+    setActiveRadar(radar);
+    setActiveCategory("Semua");
+    setSelectedArticleUrlsByTopic({});
+    setContentLoading(false);
+    setSpecialistMessages([]);
+    setSpecialistInput("");
+  }
+
   async function handleUpdatePassword(password = "") {
     const cleanPassword = password.trim();
 
@@ -3267,10 +3415,18 @@ export default function Page() {
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <h2 className="font-heading text-3xl font-semibold tracking-tight text-darinol-text">
-                  {t.newsPage}
+                  {activeRadar === "culture"
+                    ? t.cultureRadar
+                    : activeRadar === "news"
+                      ? t.newsRadar
+                      : "All Radar"}
                 </h2>
                 <p className="mt-2 text-sm font-medium text-darinol-muted">
-                  {t.newsPageHint}
+                  {activeRadar === "culture"
+                    ? "Internet culture, meme, lifestyle, creator trend, dan peluang konten non-news."
+                    : activeRadar === "news"
+                      ? "Berita, politik, ekonomi, teknologi, sports, dan isu global untuk konten informatif."
+                      : "Gabungan News Radar dan Culture Radar."}
                 </p>
               </div>
               <span className="w-fit rounded-full bg-darinol-primary/10 px-4 py-2 text-sm font-semibold text-darinol-primary">
@@ -3278,8 +3434,30 @@ export default function Page() {
               </span>
             </div>
 
+            <div className="mb-4 grid gap-2 rounded-[1.5rem] bg-darinol-background/70 p-1 sm:grid-cols-3">
+              {([
+                ["culture", t.cultureRadar],
+                ["news", t.newsRadar],
+                ["all", t.allRadar],
+              ] as const).map(([radar, label]) => (
+                <button
+                  key={radar}
+                  type="button"
+                  onClick={() => handleSelectRadar(radar)}
+                  className={[
+                    "h-11 rounded-[1.25rem] px-4 text-sm font-semibold transition",
+                    activeRadar === radar
+                      ? "orange-gradient text-white shadow-orange"
+                      : "text-darinol-muted hover:bg-darinol-surface hover:text-darinol-text",
+                  ].join(" ")}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
-              {categoryFilters.map((category) => (
+              {currentCategoryFilters.map((category) => (
                 <button
                   key={category}
                   type="button"
@@ -3328,23 +3506,40 @@ export default function Page() {
               <div>
                 <div className="mb-3 flex flex-wrap items-center gap-2">
                   <span className="rounded-full bg-darinol-primary/10 px-3 py-1 text-xs font-semibold text-darinol-primary">
-                    {selectedTopic.category}
+                    {selectedTopic.radar_type === "culture"
+                      ? selectedTopic.culture_category?.replace("_", " ") ?? "culture"
+                      : selectedTopic.category}
                   </span>
                   <span className="rounded-full bg-darinol-primary/10 px-3 py-1 text-xs font-semibold text-darinol-primary">
                     {selectedTopic.growth}
                   </span>
+                  {selectedTopic.is_sample ? (
+                    <span className="rounded-full bg-darinol-surface px-3 py-1 text-xs font-semibold text-darinol-muted">
+                      {t.cultureSample}
+                    </span>
+                  ) : null}
                 </div>
                 <h3 className="font-heading text-3xl font-semibold tracking-tight text-darinol-text">
                   {selectedTopic.name}
                 </h3>
                 <p className="mt-2 text-sm font-medium text-darinol-muted">
-                  {t.markNews}
+                  {selectedTopic.radar_type === "culture"
+                    ? "Pilih sinyal culture, lalu minta Riri bikin angle konten yang creator-native."
+                    : t.markNews}
                 </p>
               </div>
               <div className="grid w-full gap-3 sm:grid-cols-3 md:w-auto">
-                <CompactStat label={t.viralScore} value={String(selectedTopic.score)} />
+                <CompactStat
+                  label={selectedTopic.radar_type === "culture" ? "Culture Score" : t.viralScore}
+                  value={String(selectedTopic.culture_score ?? selectedTopic.score)}
+                />
                 <CompactStat label="Growth" value={selectedTopic.growth} />
-                <CompactStat label={t.selectedMaterial} value={String(selectedArticleUrls.length)} />
+                <CompactStat
+                  label={selectedTopic.radar_type === "culture" ? t.opportunityScore : t.selectedMaterial}
+                  value={selectedTopic.radar_type === "culture"
+                    ? String(selectedTopic.opportunity_score ?? "TBD")
+                    : String(selectedArticleUrls.length)}
+                />
               </div>
             </div>
 
@@ -3435,7 +3630,9 @@ export default function Page() {
               ].join(" ")}
             >
               {selectedArticleUrls.length
-                ? `${t.createContent} (${selectedArticleUrls.length})`
+                ? selectedTopic.radar_type === "culture"
+                  ? `${t.createWithRiri} (${selectedArticleUrls.length})`
+                  : `${t.createContent} (${selectedArticleUrls.length})`
                 : t.markToCreate}
             </button>
 

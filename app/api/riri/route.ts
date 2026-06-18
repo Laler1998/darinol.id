@@ -10,6 +10,8 @@ type RiriArticle = {
 type RiriTopic = {
   name?: string;
   category?: string;
+  radar_type?: "news" | "culture";
+  culture_category?: string | null;
   score?: number;
   growth?: string;
 };
@@ -31,9 +33,30 @@ function localRiriReply({
   prompt = "",
 }: RiriRequest) {
   const topicName = topic?.name ?? "topik ini";
+  const isCulture = topic?.radar_type === "culture";
   const article = selectedArticles[0];
-  const source = article?.source ?? "berita pilihan";
+  const source = article?.source ?? (isCulture ? "sinyal culture pilihan" : "berita pilihan");
   const title = article?.title ?? topicName;
+
+  if (isCulture) {
+    if (outputFormat === "Hook") {
+      return `Hook ${platform}:\n\n"${topicName} lagi rame. Kamu pernah ngalamin versi ini juga?"\n\nAlternatif:\n1. POV: ${topicName}, tapi versi anak agency.\n2. Ini format ${topicName} yang gampang kamu recreate hari ini.\n3. Jangan cuma ikut trend, pakai angle yang relate sama niche kamu.`;
+    }
+
+    if (outputFormat === "Caption") {
+      return `Caption:\n\n${topicName} lagi naik karena formatnya relatable dan gampang direplikasi.\n\nAngle yang bisa dipakai:\n- versi anak agency\n- versi freelancer\n- versi fresh graduate\n- versi introvert\n\nCTA: Kamu paling relate sama versi yang mana?\n\n#creatorindonesia #contentideas #trendkonten`;
+    }
+
+    if (outputFormat === "Carousel") {
+      return `Carousel idea:\n\n1. ${topicName}\n2. Kenapa format ini gampang relate?\n3. Versi anak agency\n4. Versi freelancer\n5. Versi fresh graduate\n6. Pilih angle yang paling cocok dengan niche kamu`;
+    }
+
+    if (outputFormat === "Script") {
+      return `Short video script ${platform}:\n\nHook: ${topicName} lagi naik, dan formatnya gampang banget kamu adaptasi.\n\nIsi:\n1. Mulai dengan POV yang relate.\n2. Tunjukkan versi niche kamu.\n3. Tambahkan twist kecil agar tidak terlihat ikut-ikutan.\n\nClose: Mau aku bikinkan versi untuk niche kamu?`;
+    }
+
+    return `Brief Riri Culture Radar:\n\nTrend: ${topicName}\nKategori: ${topic?.culture_category ?? topic?.category ?? "culture"}\n\nWhy it is trending:\nFormat ini naik karena relatable, mudah direplikasi, dan cocok untuk short-form content.\n\nSuggested content angles:\n- versi anak agency\n- versi freelancer\n- versi fresh graduate\n- versi introvert\n\nGenerated output:\nHook: "${topicName} lagi rame. Tapi versi kamu yang mana?"\nShort video script: mulai dari POV, tunjukkan situasi, lalu beri twist niche.\nCaption: Pakai format ini untuk bikin audiens merasa, "ini gue banget."\nHashtags: #creatorindonesia #contentideas #trendkonten\nCarousel idea: 5 variasi angle dari trend yang sama.\n\nCatatan: Ini mode hemat biaya. AI penuh bisa diaktifkan untuk akun Supporter.`;
+  }
 
   if (outputFormat === "Hook") {
     return `Hook ${platform}:\n\n"${title}"\n\nAlternatif:\n1. Banyak yang bahas ${topicName}, tapi pemicunya dari berita ini.\n2. Ini update ${topicName} yang perlu kamu tahu hari ini.\n3. Jangan cuma ikut ramai, pahami dulu konteks ${topicName}.`;
@@ -107,6 +130,7 @@ export async function POST(request: Request) {
   }
 
   const topic = body.topic ?? {};
+  const isCulture = topic.radar_type === "culture";
   const selectedArticles = body.selectedArticles ?? [];
   const platform = body.platform ?? "TikTok";
   const outputFormat = body.outputFormat ?? "Full Brief";
@@ -122,10 +146,15 @@ export async function POST(request: Request) {
       model,
       instructions: [
         "Kamu adalah Riri, AI content specialist dari Darinol.id.",
-        "Tugasmu mengubah berita pilihan user menjadi ide konten yang tajam, ringkas, dan siap dipakai kreator.",
+        isCulture
+          ? "User sedang memakai Culture Radar. Gunakan tone creator-native, cepat, relatable, dan cocok untuk short-form content."
+          : "User sedang memakai News Radar. Gunakan tone editorial-informatif, jelas, netral, dan berbasis sumber.",
+        "Tugasmu mengubah sinyal tren pilihan user menjadi ide konten yang tajam, ringkas, dan siap dipakai kreator.",
         "Gunakan bahasa Indonesia yang natural, tidak kaku, dan tidak terlalu formal.",
         "Jangan mengarang fakta baru. Jika informasi kurang, tulis sebagai catatan untuk verifikasi.",
-        "Selalu berbasis pada artikel yang diberikan user.",
+        isCulture
+          ? "Untuk Culture Radar, boleh memberi variasi angle kreator selama tidak mengarang metrik engagement."
+          : "Untuk News Radar, selalu berbasis pada artikel yang diberikan user.",
         outputInstructions(outputFormat),
       ].join("\n"),
       input: JSON.stringify({
