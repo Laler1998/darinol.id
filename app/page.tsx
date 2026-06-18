@@ -133,10 +133,21 @@ const copy = {
     thinkingBody:
       "Sebentar ya. Riri sedang mencari angle, hook, dan draft yang paling masuk akal dari artikel pilihanmu.",
     boot: "Menyiapkan tren terbaru untuk kontenmu.",
-    onboardingKicker: "Siap bikin konten lebih cepat?",
-    onboardingTitle: "Pilih akun Darinol kamu",
+    onboardingKicker: "Dari tren jadi konten",
+    onboardingTitle: "Jangan Kehabisan Ide Konten Lagi",
     onboardingBody:
-      "Darinol bantu kamu menangkap topik yang lagi naik, memilih berita yang relevan, lalu mengubahnya jadi ide konten yang siap dieksekusi.",
+      "Temukan tren yang sedang naik, pilih yang relevan dengan niche Anda, lalu ubah menjadi ide konten dalam hitungan detik.",
+    heroPrimaryCta: "Mulai Gratis",
+    heroSecondaryCta: "Lihat Cara Kerjanya",
+    targetTitle: "Siapa yang Cocok Menggunakan Darinol?",
+    flowTitle: "Dari Trend to Content",
+    outputPreviewTitle: "Contoh Output Konten",
+    outputPreviewHint: "Pilih tren untuk melihat contoh ide yang bisa dibuat Riri AI.",
+    ririPositioning: "Biarkan Riri AI mengubah tren menjadi ide konten yang siap dikembangkan.",
+    trustTitle: "Mengapa Darinol?",
+    finalCtaTitle: "Mulai Dari Tren. Akhiri Dengan Konten.",
+    finalCtaBody: "Darinol membantu Anda menemukan peluang konten lebih cepat sebelum tren lewat begitu saja.",
+    finalCtaButton: "Coba Gratis Sekarang",
     loginEmail: "Email kamu",
     loginEmailPlaceholder: "nama@email.com",
     loginPassword: "Password",
@@ -244,10 +255,21 @@ const copy = {
     thinkingBody:
       "One moment. Riri is finding the most sensible angle, hook, and draft from your selected articles.",
     boot: "Preparing fresh trends for your content.",
-    onboardingKicker: "Ready to create content faster?",
-    onboardingTitle: "Choose your Darinol account",
+    onboardingKicker: "From trend to content",
+    onboardingTitle: "Never Run Out of Content Ideas Again",
     onboardingBody:
-      "Darinol helps you catch rising topics, pick relevant news, and turn them into content ideas ready to execute.",
+      "Find rising trends, choose what fits your niche, then turn them into content ideas in seconds.",
+    heroPrimaryCta: "Start Free",
+    heroSecondaryCta: "See How It Works",
+    targetTitle: "Who Is Darinol For?",
+    flowTitle: "From Trend to Content",
+    outputPreviewTitle: "Content Output Preview",
+    outputPreviewHint: "Select a trend to see an example idea Riri AI can produce.",
+    ririPositioning: "Let Riri AI turn trends into content ideas ready to develop.",
+    trustTitle: "Why Darinol?",
+    finalCtaTitle: "Start With Trends. End With Content.",
+    finalCtaBody: "Darinol helps you find content opportunities faster before trends pass by.",
+    finalCtaButton: "Try Free Now",
     loginEmail: "Your email",
     loginEmailPlaceholder: "name@email.com",
     loginPassword: "Password",
@@ -313,6 +335,64 @@ const quickRiriActions = [
   { label: "Caption", prompt: "Buatkan caption yang siap dipakai" },
   { label: "Carousel", prompt: "Ubah jadi carousel 6 slide" },
 ];
+
+const targetUsers = [
+  {
+    title: "Content Creator",
+    body: "Cari ide harian lebih cepat tanpa scroll timeline terlalu lama.",
+  },
+  {
+    title: "Social Media Specialist",
+    body: "Temukan angle konten untuk brand dan kalender campaign.",
+  },
+  {
+    title: "Digital Agency",
+    body: "Percepat riset tren untuk banyak klien dan niche berbeda.",
+  },
+  {
+    title: "Media & Publisher",
+    body: "Ubah topik hangat menjadi format konten yang mudah dikonsumsi.",
+  },
+] as const;
+
+const trendToContentFlow = [
+  "Temukan Tren",
+  "Analisis Potensi Viral",
+  "Buat Ide Konten",
+  "Publish Lebih Cepat",
+] as const;
+
+const demoTrendOutputs = [
+  {
+    trend: "Bitcoin",
+    hook: "\"Bitcoin naik lagi. Masih ada peluang atau sudah terlambat?\"",
+    idea: "3 alasan Bitcoin kembali menjadi perhatian investor.",
+    format: "Instagram Carousel",
+    engagement: "High",
+  },
+  {
+    trend: "AI Video",
+    hook: "\"Video AI makin realistis. Kreator harus mulai belajar dari mana?\"",
+    idea: "Workflow sederhana membuat konten pendek dengan bantuan AI.",
+    format: "TikTok Script",
+    engagement: "High",
+  },
+  {
+    trend: "Timnas Indonesia",
+    hook: "\"Timnas lagi ramai dibahas. Apa yang bikin fans makin optimis?\"",
+    idea: "Ringkasan momentum Timnas dari update terbaru dan reaksi fans.",
+    format: "Reels Caption",
+    engagement: "Medium-High",
+  },
+] as const;
+type DemoTrendOutput = (typeof demoTrendOutputs)[number];
+
+const trustReasons = [
+  "Hemat waktu riset tren",
+  "Temukan topik yang sedang naik",
+  "Ubah tren menjadi konten lebih cepat",
+  "Cocok untuk creator, agency, dan media",
+] as const;
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -835,6 +915,7 @@ function OnboardingOverlay({
   const [newPassword, setNewPassword] = useState("");
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [selectedLoginPlan, setSelectedLoginPlan] = useState<LoginPlan>("Free");
+  const [selectedDemoTrend, setSelectedDemoTrend] = useState<DemoTrendOutput>(demoTrendOutputs[0]);
   const [amount, setAmount] = useState("25000");
   const amountLabel = new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -934,10 +1015,138 @@ function OnboardingOverlay({
               {t.onboardingBody}
             </motion.p>
 
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedLoginPlan("Free")}
+                className="orange-gradient moving-accent h-11 rounded-full px-5 text-sm font-semibold text-white transition hover:brightness-105"
+              >
+                {t.heroPrimaryCta}
+              </button>
+              <button
+                type="button"
+                onClick={() => document.getElementById("darinol-flow")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                className="h-11 rounded-full border border-darinol-border bg-darinol-surface px-5 text-sm font-semibold text-darinol-text transition hover:border-darinol-primary/40 hover:bg-darinol-primary/5"
+              >
+                {t.heroSecondaryCta}
+              </button>
+            </div>
+
             <div className="mt-5 grid gap-3 sm:mt-8 sm:grid-cols-2">
               <PlanPreview title={t.freeTitle} body={t.freeBenefit} />
               <PlanPreview title={t.starterBadge} body={t.supporterBenefit} highlight />
             </div>
+
+            <section className="mt-5 sm:mt-7">
+              <h3 className="font-heading text-lg font-semibold text-darinol-text">
+                {t.targetTitle}
+              </h3>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {targetUsers.map((user) => (
+                  <div
+                    key={user.title}
+                    className="rounded-2xl border border-darinol-border bg-darinol-surface/60 px-4 py-3"
+                  >
+                    <p className="text-sm font-semibold text-darinol-text">
+                      {user.title}
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-darinol-muted">
+                      {user.body}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section id="darinol-flow" className="mt-5 sm:mt-7">
+              <h3 className="font-heading text-lg font-semibold text-darinol-text">
+                {t.flowTitle}
+              </h3>
+              <div className="mt-3 grid gap-2">
+                {trendToContentFlow.map((step, index) => (
+                  <div key={step}>
+                    <div className="rounded-2xl border border-darinol-border bg-darinol-surface/60 px-4 py-3 text-sm font-semibold text-darinol-text">
+                      {step}
+                    </div>
+                    {index < trendToContentFlow.length - 1 ? (
+                      <div className="py-1 text-center text-darinol-primary">↓</div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="mt-5 sm:mt-7">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h3 className="font-heading text-lg font-semibold text-darinol-text">
+                    {t.outputPreviewTitle}
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-darinol-muted">
+                    {t.outputPreviewHint}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                {demoTrendOutputs.map((item) => (
+                  <button
+                    key={item.trend}
+                    type="button"
+                    onClick={() => setSelectedDemoTrend(item)}
+                    className={[
+                      "shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition",
+                      selectedDemoTrend.trend === item.trend
+                        ? "orange-gradient border-darinol-primary text-white"
+                        : "border-darinol-border bg-darinol-surface text-darinol-text hover:border-darinol-primary/40",
+                    ].join(" ")}
+                  >
+                    {item.trend}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 rounded-3xl border border-darinol-primary/20 bg-darinol-primary/5 p-4">
+                <div className="grid gap-3 text-sm">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+                      Hook
+                    </p>
+                    <p className="mt-1 font-semibold leading-relaxed text-darinol-text">
+                      {selectedDemoTrend.hook}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+                      Content Idea
+                    </p>
+                    <p className="mt-1 text-darinol-text">
+                      {selectedDemoTrend.idea}
+                    </p>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-darinol-surface/70 px-3 py-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+                        Format
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-darinol-text">
+                        {selectedDemoTrend.format}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-darinol-surface/70 px-3 py-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+                        Estimated Engagement
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-darinol-primary">
+                        {selectedDemoTrend.engagement}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <p className="mt-5 rounded-3xl border border-darinol-border bg-darinol-surface/60 px-4 py-3 text-sm font-semibold leading-relaxed text-darinol-text">
+              {t.ririPositioning}
+            </p>
           </div>
 
           <motion.div
@@ -1090,6 +1299,33 @@ function OnboardingOverlay({
               </div>
             ) : null}
 
+            {!passwordRecoveryMode ? (
+              <section className="mt-4 rounded-3xl border border-darinol-border bg-darinol-surface/70 p-4">
+                <p className="font-heading text-lg font-semibold text-darinol-text">
+                  {t.trustTitle}
+                </p>
+                <div className="mt-3 grid gap-2">
+                  {trustReasons.map((reason) => (
+                    <div key={reason} className="flex items-start gap-2 text-sm font-medium text-darinol-text">
+                      <span className="mt-0.5 text-darinol-primary">✓</span>
+                      <span>{reason}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {!passwordRecoveryMode ? (
+              <section className="mt-4 rounded-3xl border border-darinol-primary/20 bg-darinol-primary/5 p-4 text-center">
+                <p className="font-heading text-xl font-semibold tracking-tight text-darinol-text">
+                  {t.finalCtaTitle}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-darinol-muted">
+                  {t.finalCtaBody}
+                </p>
+              </section>
+            ) : null}
+
             <button
               type="button"
               onClick={passwordRecoveryMode ? handleUpdatePassword : handleContinue}
@@ -1101,7 +1337,7 @@ function OnboardingOverlay({
                 : passwordRecoveryMode
                   ? t.resetPasswordCta
                 : selectedLoginPlan === "Free"
-                  ? t.continueFree
+                  ? t.finalCtaButton
                   : t.payContinue}
             </button>
             {authMessage ? (
