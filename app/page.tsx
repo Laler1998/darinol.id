@@ -1554,13 +1554,32 @@ function MainNavigation({
 }) {
   return (
     <nav className="glass-soft mb-4 flex flex-col gap-3 rounded-[2rem] p-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="font-heading text-lg font-semibold text-darinol-text">
-          {t.contentPage}
-        </p>
-        <p className="mt-1 text-sm font-medium leading-relaxed text-darinol-muted">
-          {t.contentPageHint}
-        </p>
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-darinol-primary/20 bg-darinol-primary/10 text-darinol-primary">
+          <svg
+            aria-hidden="true"
+            className="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 5h16" />
+            <path d="M4 12h10" />
+            <path d="M4 19h7" />
+            <path d="m16 16 2 2 4-4" />
+          </svg>
+        </div>
+        <div className="min-w-0">
+          <p className="font-heading text-lg font-semibold text-darinol-text">
+            {t.contentPage}
+          </p>
+          <p className="mt-1 text-sm font-medium leading-relaxed text-darinol-muted">
+            {t.contentPageHint}
+          </p>
+        </div>
       </div>
       <div className="flex shrink-0 gap-2">
         {activeView === "Buat Konten" ? (
