@@ -144,6 +144,8 @@ const copy = {
     emptyBody:
       "Riri akan membuat ide dari artikel yang kamu tandai di Insight, supaya hasilnya lebih tajam dan tidak melebar ke mana-mana.",
     emptyButton: "Ke Insight",
+    trendsLoadingTitle: "Mengambil berita terbaru",
+    trendsLoadingBody: "Sebentar ya, Darinol sedang membaca sumber tren dan berita terbaru.",
     thinkingTitle: "Riri sedang membaca bahanmu",
     thinkingBody:
       "Sebentar ya. Riri sedang mencari angle, hook, dan draft yang paling masuk akal dari artikel pilihanmu.",
@@ -274,6 +276,8 @@ const copy = {
     emptyBody:
       "Riri will create ideas from the articles you mark in Insight, so the result stays sharp and focused.",
     emptyButton: "Go to Insight",
+    trendsLoadingTitle: "Fetching fresh news",
+    trendsLoadingBody: "One moment, Darinol is reading the latest trend and news sources.",
     thinkingTitle: "Riri is reading your material",
     thinkingBody:
       "One moment. Riri is finding the most sensible angle, hook, and draft from your selected articles.",
@@ -1070,14 +1074,14 @@ function OnboardingOverlay({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex h-dvh items-start justify-center overflow-y-auto overscroll-contain bg-darinol-text/12 px-3 py-3 backdrop-blur-sm [-webkit-overflow-scrolling:touch] sm:items-center sm:px-5 sm:py-5"
+      className="fixed inset-0 z-50 flex h-dvh items-start justify-center overflow-y-auto overscroll-contain bg-darinol-text/12 px-3 py-3 backdrop-blur-sm [-webkit-overflow-scrolling:touch] sm:px-5 sm:py-5"
     >
       <div className="ambient-layer" aria-hidden="true" />
       <motion.section
         initial={{ opacity: 0, y: 18, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 24 }}
-        className="glass-card relative max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl overflow-y-auto overscroll-contain rounded-[1.5rem] p-4 [-webkit-overflow-scrolling:touch] sm:max-h-none sm:overflow-hidden sm:rounded-[2rem] md:p-6 lg:p-8"
+        className="glass-card relative max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl overflow-y-auto overscroll-contain rounded-[1.5rem] p-4 [-webkit-overflow-scrolling:touch] sm:max-h-[calc(100dvh-2.5rem)] sm:rounded-[2rem] md:p-6 lg:p-8"
       >
         {onClose ? (
           <button
@@ -1106,7 +1110,7 @@ function OnboardingOverlay({
           transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
           className="pointer-events-none absolute -top-24 left-0 h-48 w-72 rounded-full bg-darinol-primary/20 blur-3xl"
         />
-        <div className="relative grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+        <div className="relative grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
           <div className="py-1 lg:py-8">
             <div className="mb-4 flex items-center gap-3 sm:mb-7 sm:gap-4">
               <BrandIcon className="h-12 w-12 sm:h-16 sm:w-16" animated reveal />
@@ -2110,6 +2114,47 @@ function ContentLoadingState({ t }: { t: Copy }) {
   );
 }
 
+function TrendsLoadingState({ t }: { t: Copy }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      className="mb-5 overflow-hidden rounded-3xl border border-darinol-primary/20 bg-darinol-primary/5 p-4"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-3">
+        <div className="relative h-11 w-11 shrink-0 rounded-full bg-darinol-surface shadow-soft">
+          <motion.span
+            aria-hidden="true"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-1 rounded-full border-2 border-darinol-primary/20 border-t-darinol-primary"
+          />
+          <BrandIcon className="absolute inset-0 m-auto h-6 w-6" animated />
+        </div>
+        <div className="min-w-0">
+          <p className="font-heading text-sm font-semibold text-darinol-text">
+            {t.trendsLoadingTitle}
+          </p>
+          <p className="mt-1 text-xs font-medium leading-relaxed text-darinol-muted">
+            {t.trendsLoadingBody}
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-darinol-surface">
+        <motion.div
+          aria-hidden="true"
+          animate={{ x: ["-45%", "115%"] }}
+          transition={{ duration: 1.25, repeat: Infinity, ease: "easeInOut" }}
+          className="h-full w-1/2 rounded-full orange-gradient"
+        />
+      </div>
+    </motion.div>
+  );
+}
+
 function getPlatformAdvice(
   topic: Topic,
   platform: string,
@@ -2838,6 +2883,7 @@ export default function Page() {
   const [language, setLanguage] = useState<Language>("id");
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
   const [appBooting, setAppBooting] = useState(true);
+  const [trendsLoading, setTrendsLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [updatedAt, setUpdatedAt] = useState("memuat data");
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -2976,6 +3022,8 @@ export default function Page() {
     }
 
     async function loadTrends() {
+      setTrendsLoading(true);
+
       try {
         const cachedValue = window.localStorage.getItem(cacheKey);
 
@@ -3007,6 +3055,10 @@ export default function Page() {
       } catch {
         if (!active) return;
         setUpdatedAt("data dummy");
+      } finally {
+        if (active) {
+          setTrendsLoading(false);
+        }
       }
     }
 
@@ -3479,6 +3531,10 @@ export default function Page() {
                 </button>
               ))}
             </div>
+
+            <AnimatePresence>
+              {trendsLoading ? <TrendsLoadingState t={t} /> : null}
+            </AnimatePresence>
 
             <motion.div
               variants={staggerList}
