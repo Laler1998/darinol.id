@@ -2801,7 +2801,7 @@ export default function Page() {
             ? authMode === "signup"
               ? "Akun berhasil dibuat. Kalau Supabase minta konfirmasi, cek email kamu."
               : "Login berhasil. Akun kamu sudah tersambung."
-            : `Supabase belum berhasil: ${result.message}`,
+            : result.message,
         );
 
         if (!result.ok) return;
