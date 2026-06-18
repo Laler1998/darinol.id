@@ -1,7 +1,9 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type PointerEvent, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { getCurrentUserProfile, signInWithPassword, signUpWithPassword } from "@/lib/supabase/auth";
+import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type Topic = {
   id: string;
@@ -13,6 +15,12 @@ type Topic = {
   ideas: string[];
   titles: string[];
   articles: TopicArticle[];
+};
+
+type TrendsPayload = {
+  source: string;
+  updatedAt: string;
+  topics: Topic[];
 };
 
 type TopicArticle = {
@@ -31,6 +39,8 @@ type ChatMessage = {
 type Language = "id" | "en";
 type ThemeMode = "light" | "dark";
 type Plan = "Free" | "Supporter";
+type MainView = "Berita" | "Buat Konten";
+type LoginPlan = "Free" | "Supporter";
 
 const planLimits = {
   Free: {
@@ -94,13 +104,27 @@ const copy = {
     freeBenefit: "Riset tren dan coba Riri dasar",
     supporterBenefit: "Brief Riri lebih dalam dan rapi",
     hotNews: "Hot News",
+    newsPage: "Berita",
+    contentPage: "Buat Konten",
+    newsPageHint: "Baca tren dan pilih artikel yang mau dijadikan bahan.",
+    contentPageHint: "Ubah artikel pilihan jadi brief, ide, judul, dan draft.",
+    trendSignal: "Sinyal Tren",
+    selectedMaterial: "Bahan Terpilih",
+    sourcePreview: "Preview Sumber",
+    sourcePreviewHint: "Beberapa media bisa memblokir preview. Kalau kosong, buka sumber asli.",
     payTitle: "Dukung Darinol.id",
     payBody:
-      "Pilih nominal yang nyaman. Setelah bayar, akun Supporter aktif dan kamu bisa pakai lebih banyak bahan berita.",
+      "Pilih nominal bebas, lalu transfer manual. Setelah konfirmasi, akun Supporter bisa diaktifkan.",
     payCustom: "Nominal lain",
-    payContinue: "Simulasi bayar dan masuk",
+    payContinue: "Saya sudah bayar, aktifkan demo",
     payLater: "Nanti dulu",
-    payNote: "MVP ini masih simulasi. Versi produksi bisa disambungkan ke Midtrans, Xendit, atau Stripe.",
+    payNote: "Untuk MVP, pembayaran diverifikasi manual. Versi produksi nanti bisa disambungkan ke payment gateway.",
+    manualPayment: "Manual Payment",
+    paymentDestination: "Tujuan Pembayaran",
+    paymentConfirm: "Konfirmasi Pembayaran",
+    paymentConfirmBody:
+      "Kirim bukti transfer ke admin Darinol.id, lalu akun kamu akan diubah menjadi Supporter.",
+    copyPaymentInfo: "Copy info pembayaran",
     emptyTitle: "Pilih bahan kontennya dulu",
     emptyBody:
       "Riri akan membuat ide dari artikel yang kamu tandai di Insight, supaya hasilnya lebih tajam dan tidak melebar ke mana-mana.",
@@ -113,6 +137,17 @@ const copy = {
     onboardingTitle: "Pilih akun Darinol kamu",
     onboardingBody:
       "Darinol bantu kamu menangkap topik yang lagi naik, memilih berita yang relevan, lalu mengubahnya jadi ide konten yang siap dieksekusi.",
+    loginEmail: "Email kamu",
+    loginEmailPlaceholder: "nama@email.com",
+    loginPassword: "Password",
+    loginPasswordPlaceholder: "Minimal 6 karakter",
+    loginModeSignIn: "Masuk",
+    loginModeSignUp: "Daftar",
+    continueFree: "Masuk sebagai Free",
+    chooseStarter: "Pilih Starter",
+    starterBadge: "Starter",
+    qrisTitle: "Bayar pakai QRIS",
+    qrisBody: "Scan QRIS atau copy instruksi pembayaran. Setelah konfirmasi, akun Starter aktif untuk demo.",
     freeTitle: "Free Creator",
     freeBody:
       "Cocok buat mulai riset tren harian, pilih artikel, dan bikin ide konten pertama tanpa ribet.",
@@ -176,13 +211,27 @@ const copy = {
     freeBenefit: "Research trends and try basic Riri",
     supporterBenefit: "Deeper, cleaner Riri briefs",
     hotNews: "Hot News",
+    newsPage: "News",
+    contentPage: "Create Content",
+    newsPageHint: "Read trends and choose articles as content material.",
+    contentPageHint: "Turn selected articles into briefs, ideas, titles, and drafts.",
+    trendSignal: "Trend Signal",
+    selectedMaterial: "Selected Material",
+    sourcePreview: "Source Preview",
+    sourcePreviewHint: "Some publishers may block previews. If it is blank, open the original source.",
     payTitle: "Support Darinol.id",
     payBody:
-      "Choose any amount that feels right. After payment, Supporter unlocks more news materials.",
+      "Choose any amount, then pay manually. After confirmation, Supporter can be activated.",
     payCustom: "Custom amount",
-    payContinue: "Simulate payment and enter",
+    payContinue: "I have paid, activate demo",
     payLater: "Maybe later",
-    payNote: "This MVP uses a simulated payment. Production can connect to Midtrans, Xendit, or Stripe.",
+    payNote: "For this MVP, payment is verified manually. Production can connect to a payment gateway later.",
+    manualPayment: "Manual Payment",
+    paymentDestination: "Payment Destination",
+    paymentConfirm: "Payment Confirmation",
+    paymentConfirmBody:
+      "Send your payment proof to Darinol.id admin, then your account will be changed to Supporter.",
+    copyPaymentInfo: "Copy payment info",
     emptyTitle: "Choose your content material first",
     emptyBody:
       "Riri will create ideas from the articles you mark in Insight, so the result stays sharp and focused.",
@@ -195,6 +244,17 @@ const copy = {
     onboardingTitle: "Choose your Darinol account",
     onboardingBody:
       "Darinol helps you catch rising topics, pick relevant news, and turn them into content ideas ready to execute.",
+    loginEmail: "Your email",
+    loginEmailPlaceholder: "name@email.com",
+    loginPassword: "Password",
+    loginPasswordPlaceholder: "At least 6 characters",
+    loginModeSignIn: "Sign in",
+    loginModeSignUp: "Sign up",
+    continueFree: "Enter as Free",
+    chooseStarter: "Choose Starter",
+    starterBadge: "Starter",
+    qrisTitle: "Pay with QRIS",
+    qrisBody: "Scan QRIS or copy the payment instruction. After confirmation, Starter is active for demo.",
     freeTitle: "Free Creator",
     freeBody:
       "Best for daily trend research, selecting articles, and creating your first content ideas without friction.",
@@ -230,12 +290,15 @@ const creatorModes = [
   "Carousel",
   "Thread",
   "Soft News",
+  "Storytelling",
+  "Hot Take",
 ];
 
 const detailTabs = ["Insight", "Konten"];
 
 const platforms = ["TikTok", "Instagram", "YouTube Shorts", "X Thread", "LinkedIn"];
-const outputFormats = ["Full Brief", "Hook", "Script", "Caption", "Carousel"];
+const outputFormats = ["Full Brief", "Hook", "Script", "Caption", "Carousel", "Thread", "Outline"];
+const contentTones = ["Santai", "Edukasi", "Tegas", "Story", "Profesional"];
 const quickRiriActions = [
   { label: "Buat Hook", prompt: "Buatkan hook paling kuat dari berita ini" },
   { label: "Script 45 detik", prompt: "Buatkan script video 45 detik" },
@@ -385,6 +448,8 @@ function Header({
   onSearchChange,
   updatedAt,
   selectedPlan,
+  accountEmail,
+  onAccountClick,
   savedCount,
   hotNewsItems,
   language,
@@ -397,6 +462,8 @@ function Header({
   onSearchChange: (value: string) => void;
   updatedAt: string;
   selectedPlan: string | null;
+  accountEmail: string;
+  onAccountClick: () => void;
   savedCount: number;
   hotNewsItems: ReturnType<typeof getHotNewsItems>;
   language: Language;
@@ -418,7 +485,7 @@ function Header({
         </div>
 
         <div className="order-1 text-left lg:order-2 lg:text-center">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-darinol-primary">
+            <h1 className="bg-gradient-to-r from-darinol-primary via-[#ff9865] to-[#ff6a3d] bg-clip-text font-heading text-2xl font-semibold tracking-tight text-transparent">
             Darinol.id
           </h1>
           <p className="mt-1 text-sm font-medium text-darinol-muted">
@@ -427,9 +494,13 @@ function Header({
         </div>
 
         <div className="order-3 flex flex-wrap items-center justify-start gap-2 lg:justify-end">
-            <span className="glass-soft h-8 rounded-full px-3 py-1.5 text-xs font-semibold text-darinol-muted">
-              {selectedPlan ?? t.noAccount}
-            </span>
+            <button
+              type="button"
+              onClick={onAccountClick}
+              className="glass-soft h-8 max-w-[280px] truncate rounded-full px-3 py-1.5 text-xs font-semibold text-darinol-muted transition hover:text-darinol-text"
+            >
+              {selectedPlan ?? t.noAccount} • {accountEmail || "Belum login"}
+            </button>
             <span className="glass-soft h-8 rounded-full px-3 py-1.5 text-xs font-semibold text-darinol-muted">
               {savedCount} {t.saved}
             </span>
@@ -442,7 +513,7 @@ function Header({
                   className={[
                     "h-7 rounded-full px-3 text-xs font-semibold transition",
                     language === item
-                      ? "bg-darinol-primary text-white"
+                      ? "orange-gradient text-white"
                       : "text-darinol-muted hover:text-darinol-text",
                   ].join(" ")}
                 >
@@ -485,7 +556,7 @@ function Header({
 
       <div className="glass-soft mt-3 overflow-hidden rounded-full">
         <div className="flex items-center gap-3 px-3 py-2">
-          <span className="shrink-0 rounded-full bg-darinol-primary px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+          <span className="orange-gradient moving-accent shrink-0 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
             Live
           </span>
           <div className="min-w-0 flex-1 overflow-hidden">
@@ -537,7 +608,7 @@ function TopicCard({
       className={[
         "w-full rounded-2xl border p-3 text-left transition duration-200",
         selected
-          ? "border-darinol-primary bg-darinol-primary text-white shadow-soft"
+          ? "orange-gradient border-darinol-primary text-white shadow-soft"
           : "glass-card border-transparent text-darinol-text hover:-translate-y-0.5 hover:border-darinol-primary/25",
       ].join(" ")}
     >
@@ -610,15 +681,144 @@ function TopicCard({
   );
 }
 
+function BrandIcon({
+  className = "h-12 w-12",
+  animated = false,
+  reveal = false,
+}: {
+  className?: string;
+  animated?: boolean;
+  reveal?: boolean;
+}) {
+  return (
+    <motion.div
+      initial={
+        reveal
+          ? {
+              opacity: 0,
+              scale: 0.72,
+              y: 18,
+              rotate: -10,
+              filter: "drop-shadow(0 0 0 rgba(255, 122, 69, 0))",
+            }
+          : undefined
+      }
+      animate={
+        reveal
+          ? {
+              opacity: 1,
+              scale: 1,
+              y: [18, -2, 0],
+              rotate: [-10, 1.4, 0],
+              filter: [
+                "drop-shadow(0 0 0 rgba(255, 122, 69, 0))",
+                "drop-shadow(0 26px 38px rgba(255, 122, 69, 0.34))",
+                "drop-shadow(0 14px 24px rgba(255, 122, 69, 0.2))",
+              ],
+            }
+          : animated
+          ? {
+              y: [0, -2, 0],
+              rotate: [0, -0.7, 0.7, 0],
+              filter: [
+                "drop-shadow(0 12px 20px rgba(255, 122, 69, 0.16))",
+                "drop-shadow(0 18px 30px rgba(255, 122, 69, 0.26))",
+                "drop-shadow(0 12px 20px rgba(255, 122, 69, 0.16))",
+              ],
+            }
+          : undefined
+      }
+      transition={
+        reveal
+          ? {
+              duration: 1.25,
+              ease: [0.16, 1, 0.3, 1],
+              times: [0, 0.72, 1],
+            }
+          : { duration: 6.8, repeat: Infinity, ease: "easeInOut" }
+      }
+      className={["relative shrink-0", className].join(" ")}
+    >
+      <img
+        src="/darinol-icon.png?v=6"
+        alt="Darinol.id"
+        className="h-full w-full rounded-[26%] object-cover"
+      />
+      {animated ? (
+        <motion.span
+          className="pointer-events-none absolute inset-0 rounded-[26%] ring-1 ring-darinol-primary/20"
+          animate={{ opacity: [0.45, 0.9, 0.45], scale: [1, 1.035, 1] }}
+          transition={{ duration: 7.2, repeat: Infinity, ease: "easeInOut" }}
+        />
+      ) : null}
+    </motion.div>
+  );
+}
+
+function PlanPreview({
+  title,
+  body,
+  highlight = false,
+}: {
+  title: string;
+  body: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={[
+        "rounded-3xl border px-4 py-3",
+        highlight
+          ? "border-darinol-primary/30 bg-darinol-primary/10"
+          : "border-darinol-border bg-darinol-surface/50",
+      ].join(" ")}
+    >
+      <p className="font-heading text-sm font-semibold text-darinol-text">
+        {title}
+      </p>
+      <p className="mt-1 text-xs leading-relaxed text-darinol-muted">
+        {body}
+      </p>
+    </div>
+  );
+}
+
 function OnboardingOverlay({
   onChoosePlan,
+  onClose,
   language,
   t,
+  authMessage,
+  authLoading,
 }: {
-  onChoosePlan: (plan: Plan) => void;
+  onChoosePlan: (
+    plan: Plan,
+    email: string,
+    password: string,
+    authMode: "signin" | "signup",
+  ) => void;
+  onClose?: () => void;
   language: Language;
   t: Copy;
+  authMessage: string;
+  authLoading: boolean;
 }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [selectedLoginPlan, setSelectedLoginPlan] = useState<LoginPlan>("Free");
+  const [amount, setAmount] = useState("25000");
+  const amountLabel = new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(Number(amount || 0));
+  const paymentInfo = `Darinol.id Starter\nEmail: ${email || "isi email kamu"}\nNominal: ${amountLabel}\nMetode: QRIS\nKonfirmasi: kirim bukti pembayaran ke admin Darinol.id`;
+
+  function handleContinue() {
+    onChoosePlan(selectedLoginPlan, email, password, authMode);
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -626,62 +826,215 @@ function OnboardingOverlay({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-darinol-text/12 px-5 backdrop-blur-sm"
     >
+      <div className="ambient-layer" aria-hidden="true" />
       <motion.section
         initial={{ opacity: 0, y: 18, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 24 }}
-        className="glass-card w-full max-w-2xl rounded-[2rem] p-6 md:p-8"
+        className="glass-card relative w-full max-w-5xl overflow-hidden rounded-[2rem] p-4 md:p-6 lg:p-8"
       >
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-darinol-primary">
-          {t.onboardingKicker}
-        </p>
-        <h2 className="mt-3 font-heading text-3xl font-semibold tracking-tight text-darinol-text md:text-4xl">
-          {t.onboardingTitle}
-        </h2>
-        <p className="mt-3 max-w-xl text-sm leading-relaxed text-darinol-muted">
-          {t.onboardingBody}
-        </p>
-
-        <div className="mt-7 grid gap-4 md:grid-cols-2">
+        {onClose ? (
           <button
             type="button"
-            onClick={() => onChoosePlan("Free")}
-            className="glass-soft rounded-3xl p-5 text-left transition hover:border-darinol-primary/35"
+            onClick={onClose}
+            aria-label="Tutup"
+            className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full border border-white/50 bg-white/60 text-darinol-muted shadow-soft backdrop-blur-xl transition hover:scale-105 hover:border-darinol-primary/30 hover:text-darinol-primary dark:border-white/10 dark:bg-white/10"
           >
-            <p className="font-heading text-xl font-semibold text-darinol-text">
-              {t.freeTitle}
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-darinol-muted">
-              {t.freeBody}
-            </p>
-            <div className="mt-4 space-y-2 text-xs font-medium text-darinol-muted">
-              <p>- {language === "id" ? "1 berita sebagai bahan konten" : "1 news item as content material"}</p>
-              <p>- {t.freeBenefit}</p>
-            </div>
-            <p className="mt-5 text-sm font-semibold text-darinol-primary">
-              {t.freeCta}
-            </p>
+            <svg
+              aria-hidden="true"
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
           </button>
+        ) : null}
+        <motion.div
+          aria-hidden="true"
+          animate={{ x: ["-35%", "45%", "-35%"], opacity: [0.12, 0.28, 0.12] }}
+          transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+          className="pointer-events-none absolute -top-24 left-0 h-48 w-72 rounded-full bg-darinol-primary/20 blur-3xl"
+        />
+        <div className="relative grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+          <div className="py-2 lg:py-8">
+            <div className="mb-7 flex items-center gap-4">
+              <BrandIcon className="h-16 w-16" animated reveal />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-darinol-primary">
+                  Darinol.id
+                </p>
+                <p className="mt-1 text-sm font-medium text-darinol-muted">
+                  {t.tagline}
+                </p>
+              </div>
+            </div>
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55, duration: 0.5, ease: "easeOut" }}
+              className="text-xs font-semibold uppercase tracking-[0.16em] text-darinol-primary"
+            >
+              {t.onboardingKicker}
+            </motion.p>
+            <motion.h2
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.68, duration: 0.55, ease: "easeOut" }}
+              className="mt-3 max-w-xl font-heading text-4xl font-semibold tracking-tight text-darinol-text md:text-5xl"
+            >
+              {t.onboardingTitle}
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.82, duration: 0.55, ease: "easeOut" }}
+              className="mt-4 max-w-lg text-sm leading-relaxed text-darinol-muted"
+            >
+              {t.onboardingBody}
+            </motion.p>
 
-          <button
-            type="button"
-            onClick={() => onChoosePlan("Supporter")}
-            className="rounded-3xl border border-darinol-primary/35 bg-darinol-primary p-5 text-left text-white shadow-soft transition hover:brightness-105"
-          >
-            <p className="font-heading text-xl font-semibold">
-              {t.supporterTitle}
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-white/85">
-              {t.supporterBody}
-            </p>
-            <div className="mt-4 space-y-2 text-xs font-medium text-white/80">
-              <p>- {language === "id" ? "Bisa pakai beberapa berita pilihan" : "Use multiple selected news items"}</p>
-              <p>- {t.supporterBenefit}</p>
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              <PlanPreview title={t.freeTitle} body={t.freeBenefit} />
+              <PlanPreview title={t.starterBadge} body={t.supporterBenefit} highlight />
             </div>
-            <p className="mt-5 text-sm font-semibold">
-              {t.supporterCta}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.95, duration: 0.55, ease: "easeOut" }}
+            className="glass-soft rounded-[1.75rem] p-4 md:p-5"
+          >
+            <div className="mb-4 grid grid-cols-2 rounded-full bg-darinol-background/70 p-1">
+              {(["signin", "signup"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setAuthMode(mode)}
+                  className={[
+                    "h-10 rounded-full text-sm font-semibold transition",
+                    authMode === mode
+                      ? "orange-gradient text-white shadow-orange"
+                      : "text-darinol-muted hover:text-darinol-text",
+                  ].join(" ")}
+                >
+                  {mode === "signin" ? t.loginModeSignIn : t.loginModeSignUp}
+                </button>
+              ))}
+            </div>
+
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+                {t.loginEmail}
+              </span>
+              <input
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder={t.loginEmailPlaceholder}
+                className="mt-2 h-12 w-full rounded-2xl border border-darinol-border bg-darinol-surface/80 px-4 text-sm font-semibold text-darinol-text outline-none focus:border-darinol-primary focus:ring-4 focus:ring-darinol-primary/10"
+              />
+            </label>
+            <label className="mt-3 block">
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+                {t.loginPassword}
+              </span>
+              <input
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder={t.loginPasswordPlaceholder}
+                type="password"
+                className="mt-2 h-12 w-full rounded-2xl border border-darinol-border bg-darinol-surface/80 px-4 text-sm font-semibold text-darinol-text outline-none focus:border-darinol-primary focus:ring-4 focus:ring-darinol-primary/10"
+              />
+            </label>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {(["Free", "Supporter"] as const).map((plan) => (
+                <button
+                  key={plan}
+                  type="button"
+                  onClick={() => setSelectedLoginPlan(plan)}
+                  className={[
+                    "rounded-2xl border p-4 text-left transition",
+                    selectedLoginPlan === plan
+                      ? plan === "Supporter"
+                        ? "orange-gradient border-darinol-primary text-white"
+                        : "border-darinol-primary bg-darinol-surface text-darinol-primary"
+                      : "border-darinol-border bg-darinol-surface/70 text-darinol-text hover:border-darinol-primary/35",
+                  ].join(" ")}
+                >
+                  <p className="font-heading text-lg font-semibold">
+                    {plan === "Free" ? t.freeTitle : t.starterBadge}
+                  </p>
+                  <p className={["mt-1 text-xs leading-relaxed", selectedLoginPlan === plan && plan === "Supporter" ? "text-white/80" : "text-darinol-muted"].join(" ")}>
+                    {plan === "Free" ? t.freeBody : t.supporterBody}
+                  </p>
+                </button>
+              ))}
+            </div>
+
+            {selectedLoginPlan === "Supporter" ? (
+              <div className="mt-4 rounded-3xl border border-darinol-primary/20 bg-darinol-surface/80 p-4">
+                <div className="flex items-start gap-4">
+                  <div className="grid h-28 w-28 shrink-0 place-items-center rounded-2xl border border-darinol-border bg-white p-3">
+                    <div className="grid h-full w-full place-items-center rounded-xl bg-[linear-gradient(90deg,#111_12%,transparent_12%_22%,#111_22%_34%,transparent_34%_48%,#111_48%_58%,transparent_58%_70%,#111_70%_82%,transparent_82%),linear-gradient(#111_12%,transparent_12%_22%,#111_22%_34%,transparent_34%_48%,#111_48%_58%,transparent_58%_70%,#111_70%_82%,transparent_82%)] bg-[length:22px_22px] text-[10px] font-bold text-darinol-primary">
+                      QRIS
+                    </div>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-heading text-lg font-semibold text-darinol-text">
+                      {t.qrisTitle}
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed text-darinol-muted">
+                      {t.qrisBody}
+                    </p>
+                    <label className="mt-3 block">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+                        {t.payCustom}
+                      </span>
+                      <input
+                        value={amount}
+                        onChange={(event) => setAmount(event.target.value.replace(/\D/g, ""))}
+                        inputMode="numeric"
+                        className="mt-2 h-11 w-full rounded-2xl border border-darinol-border bg-darinol-background px-4 text-sm font-semibold text-darinol-text outline-none focus:border-darinol-primary focus:ring-4 focus:ring-darinol-primary/10"
+                      />
+                    </label>
+                    <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-darinol-background px-4 py-3">
+                      <span className="font-heading text-lg font-semibold text-darinol-text">
+                        {amountLabel}
+                      </span>
+                      <CopyButton text={paymentInfo} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={handleContinue}
+              disabled={authLoading}
+              className="orange-gradient moving-accent mt-5 h-12 w-full rounded-full px-5 text-sm font-semibold text-white transition hover:brightness-105"
+            >
+              {authLoading
+                ? "Menghubungkan..."
+                : selectedLoginPlan === "Free"
+                  ? t.continueFree
+                  : t.payContinue}
+            </button>
+            {authMessage ? (
+              <p className="mt-3 rounded-2xl border border-darinol-primary/20 bg-darinol-primary/5 px-4 py-3 text-center text-xs font-semibold leading-relaxed text-darinol-primary">
+                {authMessage}
+              </p>
+            ) : null}
+            <p className="mt-3 text-center text-xs font-medium text-darinol-muted">
+              {selectedLoginPlan === "Free" ? t.planFreeShort : t.paymentConfirmBody}
             </p>
-          </button>
+          </motion.div>
         </div>
       </motion.section>
     </motion.div>
@@ -697,9 +1050,7 @@ function AppLoadingOverlay({ t }: { t: Copy }) {
       className="fixed inset-0 z-[60] flex items-center justify-center bg-darinol-background px-5"
     >
       <section className="text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-darinol-surface text-darinol-primary shadow-soft">
-          <div className="h-6 w-6 animate-spin rounded-full border-4 border-darinol-primary/20 border-t-darinol-primary" />
-        </div>
+        <BrandIcon className="mx-auto h-20 w-20" animated reveal />
         <h2 className="mt-5 font-heading text-2xl font-semibold tracking-tight text-darinol-text">
           Darinol.id
         </h2>
@@ -728,27 +1079,7 @@ function WelcomeStrip({
       className="glass-card mb-4 flex shrink-0 flex-col gap-3 rounded-3xl px-4 py-3 md:flex-row md:items-center md:justify-between"
     >
       <div className="flex items-center gap-3">
-        <div className="float-soft flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-darinol-primary text-white">
-          <svg
-            aria-hidden="true"
-            className="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 2v4" />
-            <path d="M12 18v4" />
-            <path d="m4.93 4.93 2.83 2.83" />
-            <path d="m16.24 16.24 2.83 2.83" />
-            <path d="M2 12h4" />
-            <path d="M18 12h4" />
-            <path d="m4.93 19.07 2.83-2.83" />
-            <path d="m16.24 7.76 2.83-2.83" />
-          </svg>
-        </div>
+        <BrandIcon className="h-11 w-11" animated />
         <div>
           <p className="font-heading text-sm font-semibold text-darinol-text">
             Mulai dari Free. Pilih berita, lalu minta Riri bikin konten.
@@ -761,11 +1092,65 @@ function WelcomeStrip({
       <button
         type="button"
         onClick={onUpgrade}
-        className="h-10 rounded-full bg-darinol-primary px-4 text-xs font-semibold text-white transition hover:brightness-105"
+        className="orange-gradient moving-accent h-10 rounded-full px-4 text-xs font-semibold text-white transition hover:brightness-105"
       >
         Lihat Supporter
       </button>
     </motion.div>
+  );
+}
+
+function MainNavigation({
+  activeView,
+  onChange,
+  t,
+}: {
+  activeView: MainView;
+  onChange: (view: MainView) => void;
+  t: Copy;
+}) {
+  const views: Array<{ id: MainView; title: string; hint: string }> = [
+    { id: "Berita", title: t.newsPage, hint: t.newsPageHint },
+    { id: "Buat Konten", title: t.contentPage, hint: t.contentPageHint },
+  ];
+
+  return (
+    <nav className="glass-soft mb-4 grid gap-2 rounded-[2rem] p-2 md:grid-cols-2">
+      {views.map((view) => {
+        const active = activeView === view.id;
+
+        return (
+          <button
+            key={view.id}
+            type="button"
+            onClick={() => onChange(view.id)}
+            className={[
+              "rounded-[1.5rem] border p-4 text-left transition",
+              active
+                ? "orange-gradient border-darinol-primary text-white shadow-soft"
+                : "border-transparent bg-transparent text-darinol-text hover:bg-darinol-surface/55",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "font-heading text-lg font-semibold",
+                active ? "text-white" : "text-darinol-text",
+              ].join(" ")}
+            >
+              {view.title}
+            </span>
+            <span
+              className={[
+                "mt-1 block text-sm font-medium leading-relaxed",
+                active ? "text-white/80" : "text-darinol-muted",
+              ].join(" ")}
+            >
+              {view.hint}
+            </span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -804,7 +1189,7 @@ function UpgradeNotice({
         <button
           type="button"
           onClick={onUpgrade}
-          className="h-10 rounded-full bg-darinol-primary px-4 text-xs font-semibold text-white"
+          className="orange-gradient h-10 rounded-full px-4 text-xs font-semibold text-white"
         >
           {t.upgradeCta}
         </button>
@@ -829,6 +1214,8 @@ function PaymentModal({
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(Number(amount || 0));
+  const paymentDestination = "Darinol.id Supporter\nBank/E-wallet: isi rekening admin\nNama: Darinol.id\nCatatan: Supporter Darinol";
+  const paymentInfo = `${paymentDestination}\nNominal: ${amountLabel}\nKonfirmasi: kirim bukti transfer ke admin Darinol.id`;
 
   return (
     <motion.div
@@ -846,7 +1233,7 @@ function PaymentModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-darinol-primary">
-              Supporter
+              {t.manualPayment}
             </p>
             <h2 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-darinol-text">
               {t.payTitle}
@@ -875,7 +1262,7 @@ function PaymentModal({
               className={[
                 "h-11 rounded-full border text-xs font-semibold transition",
                 amount === item
-                  ? "border-darinol-primary bg-darinol-primary text-white"
+                  ? "orange-gradient border-darinol-primary text-white"
                   : "border-darinol-border bg-darinol-background text-darinol-muted hover:border-darinol-primary/40 hover:text-darinol-text",
               ].join(" ")}
             >
@@ -911,10 +1298,33 @@ function PaymentModal({
           </p>
         </div>
 
+        <div className="mt-3 rounded-2xl border border-darinol-border bg-darinol-surface/70 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+                {t.paymentDestination}
+              </p>
+              <p className="mt-2 whitespace-pre-line text-sm font-semibold leading-relaxed text-darinol-text">
+                {paymentDestination}
+              </p>
+            </div>
+            <CopyButton text={paymentInfo} />
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-2xl border border-darinol-primary/20 bg-darinol-primary/5 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-darinol-primary">
+            {t.paymentConfirm}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-darinol-muted">
+            {t.paymentConfirmBody}
+          </p>
+        </div>
+
         <button
           type="button"
           onClick={onPaid}
-          className="mt-5 h-12 w-full rounded-full bg-darinol-primary px-5 text-sm font-semibold text-white transition hover:brightness-105"
+          className="orange-gradient moving-accent mt-5 h-12 w-full rounded-full px-5 text-sm font-semibold text-white transition hover:brightness-105"
         >
           {t.payContinue}
         </button>
@@ -946,6 +1356,10 @@ function IdeaCard({ idea }: { idea: string }) {
 function formatArticleTime(value: string | null) {
   if (!value) return "hari ini";
 
+  return formatUpdatedAt(value);
+}
+
+function formatUpdatedAt(value: string) {
   return new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
     month: "short",
@@ -1106,11 +1520,51 @@ function CompactTextBlock({
 }) {
   return (
     <div className="glass-soft rounded-2xl px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-darinol-muted">
-        {label}
-      </p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+          {label}
+        </p>
+        <CopyButton text={text} />
+      </div>
       <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-darinol-text">
         {text}
+      </p>
+    </div>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="shrink-0 rounded-full border border-darinol-border bg-darinol-surface/80 px-3 py-1 text-[11px] font-semibold text-darinol-muted transition hover:border-darinol-primary/40 hover:text-darinol-primary"
+    >
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
+
+function CompactStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="glass-soft rounded-2xl px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+        {label}
+      </p>
+      <p className="mt-1 font-heading text-xl font-semibold text-darinol-text">
+        {value}
       </p>
     </div>
   );
@@ -1138,12 +1592,13 @@ function SimpleList({
         {items.map((item, index) => (
           <div
             key={item}
-            className="glass-soft flex gap-3 rounded-2xl px-4 py-3 text-sm leading-relaxed text-darinol-text"
+            className="glass-soft flex items-start gap-3 rounded-2xl px-4 py-3 text-sm leading-relaxed text-darinol-text"
           >
             <span className="font-heading text-sm font-semibold text-darinol-primary">
               {index + 1}
             </span>
-            <p>{item}</p>
+            <p className="flex-1">{item}</p>
+            <CopyButton text={item} />
           </div>
         ))}
       </div>
@@ -1184,7 +1639,7 @@ function ContentEmptyState({
       <button
         type="button"
         onClick={onBackToInsight}
-        className="mt-5 h-11 rounded-full bg-darinol-primary px-5 text-sm font-semibold text-white transition hover:brightness-105"
+        className="orange-gradient moving-accent mt-5 h-11 rounded-full px-5 text-sm font-semibold text-white transition hover:brightness-105"
       >
         {t.emptyButton}
       </button>
@@ -1195,7 +1650,7 @@ function ContentEmptyState({
 function ContentLoadingState({ t }: { t: Copy }) {
   return (
     <section className="glass-card rounded-3xl p-8 text-center">
-      <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-darinol-primary/20 border-t-darinol-primary" />
+      <BrandIcon className="mx-auto h-16 w-16" animated />
       <h3 className="mt-5 font-heading text-xl font-semibold text-darinol-text">
         {t.thinkingTitle}
       </h3>
@@ -1413,7 +1868,7 @@ function SpecialistChat({
               className={[
                 "shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition",
                 platform === item
-                  ? "border-darinol-primary bg-darinol-primary text-white shadow-soft"
+                  ? "orange-gradient border-darinol-primary text-white shadow-soft"
                   : "border-darinol-border bg-darinol-surface text-darinol-muted hover:border-darinol-primary/40 hover:text-darinol-text",
               ].join(" ")}
             >
@@ -1434,6 +1889,20 @@ function SpecialistChat({
                   ? "border-darinol-text bg-darinol-text text-darinol-surface"
                   : "border-darinol-border bg-darinol-surface text-darinol-muted hover:border-darinol-text/30 hover:text-darinol-text",
               ].join(" ")}
+            >
+              {item}
+            </motion.button>
+          ))}
+        </div>
+        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+          {contentTones.map((item) => (
+            <motion.button
+              key={item}
+              type="button"
+              onClick={() => onQuickPrompt(`Ubah gaya konten jadi ${item}`)}
+              disabled={loading}
+              whileTap={{ scale: 0.96 }}
+              className="shrink-0 rounded-full border border-darinol-border bg-darinol-surface/80 px-3 py-2 text-xs font-semibold text-darinol-muted transition hover:border-darinol-primary/40 hover:text-darinol-text disabled:cursor-wait disabled:opacity-60"
             >
               {item}
             </motion.button>
@@ -1483,11 +1952,16 @@ function SpecialistChat({
                 className={[
                   "rounded-2xl px-4 py-3 text-sm leading-relaxed",
                   message.role === "user"
-                    ? "ml-auto bg-darinol-primary text-white"
+                    ? "orange-gradient ml-auto text-white"
                     : "bg-darinol-background text-darinol-text",
                 ].join(" ")}
               >
-                <p className="whitespace-pre-line">{message.text}</p>
+                <div className="flex items-start gap-3">
+                  <p className="flex-1 whitespace-pre-line">{message.text}</p>
+                  {message.role === "assistant" ? (
+                    <CopyButton text={message.text} />
+                  ) : null}
+                </div>
               </motion.div>
             ))}
             {loading ? <RiriThinking /> : null}
@@ -1516,7 +1990,7 @@ function SpecialistChat({
           type="button"
           onClick={onSubmit}
           disabled={loading}
-          className="h-12 rounded-full bg-darinol-primary px-6 text-sm font-semibold text-white transition hover:brightness-105 disabled:cursor-wait disabled:opacity-70"
+          className="orange-gradient moving-accent h-12 rounded-full px-6 text-sm font-semibold text-white transition hover:brightness-105 disabled:cursor-wait disabled:opacity-70"
         >
           {loading ? "..." : t.send}
         </button>
@@ -1532,8 +2006,8 @@ function DetailPanel({
   contentLoading,
   selectedPlan,
   t,
-  activeTab,
-  onTabChange,
+  activeView,
+  onViewChange,
   onToggleArticle,
   onCreateContent,
   creatorMode,
@@ -1559,8 +2033,8 @@ function DetailPanel({
   contentLoading: boolean;
   selectedPlan: Plan | null;
   t: Copy;
-  activeTab: string;
-  onTabChange: (tab: string) => void;
+  activeView: MainView;
+  onViewChange: (view: MainView) => void;
   onToggleArticle: (articleUrl: string) => void;
   onCreateContent: () => void;
   creatorMode: string;
@@ -1610,8 +2084,8 @@ function DetailPanel({
           ) : null}
         </div>
         {topic.articles.length ? (
-          <div className="space-y-3">
-            {topic.articles.slice(0, 5).map((article) => {
+          <div className="grid gap-3 lg:grid-cols-2">
+            {topic.articles.slice(0, 12).map((article) => {
               const selected = selectedArticleUrls.includes(article.url);
 
               return (
@@ -1631,7 +2105,7 @@ function DetailPanel({
                       className={[
                         "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition",
                         selected
-                          ? "border-darinol-primary bg-darinol-primary text-white"
+                          ? "orange-gradient border-darinol-primary text-white"
                           : "border-darinol-border bg-darinol-surface text-transparent hover:border-darinol-primary",
                       ].join(" ")}
                       aria-label={`Pakai artikel ${article.title}`}
@@ -1677,34 +2151,34 @@ function DetailPanel({
                 </article>
               );
             })}
-            <button
-              type="button"
-              onClick={onCreateContent}
-              disabled={!selectedArticleCount}
-              className={[
-                "h-12 w-full rounded-full px-5 text-sm font-semibold transition",
-                selectedArticleCount
-                  ? "bg-darinol-primary text-white hover:brightness-105"
-                  : "cursor-not-allowed bg-darinol-surface text-darinol-muted",
-              ].join(" ")}
-            >
-              {selectedArticleCount
-                ? `${t.createContent} (${selectedArticleCount})`
-                : t.markToCreate}
-            </button>
           </div>
         ) : (
           <p className="glass-soft rounded-2xl px-4 py-3 text-sm text-darinol-muted">
             {t.noSource}
           </p>
         )}
+        <button
+          type="button"
+          onClick={onCreateContent}
+          disabled={!selectedArticleCount}
+          className={[
+            "mt-4 h-12 w-full rounded-full px-5 text-sm font-semibold transition",
+            selectedArticleCount
+                ? "orange-gradient moving-accent text-white hover:brightness-105"
+              : "cursor-not-allowed bg-darinol-surface text-darinol-muted",
+          ].join(" ")}
+        >
+          {selectedArticleCount
+            ? `${t.createContent} (${selectedArticleCount})`
+            : t.markToCreate}
+        </button>
       </motion.section>
     </div>
   );
   const contentContent = contentLoading ? (
     <ContentLoadingState t={t} />
   ) : !hasSelectedArticles ? (
-    <ContentEmptyState onBackToInsight={() => onTabChange("Insight")} t={t} />
+    <ContentEmptyState onBackToInsight={() => onViewChange("Berita")} t={t} />
   ) : (
     <div className="space-y-5">
       <SpecialistChat
@@ -1748,7 +2222,7 @@ function DetailPanel({
                 className={[
                   "shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition",
                   creatorMode === mode
-                    ? "border-darinol-primary bg-darinol-primary text-white"
+                    ? "orange-gradient border-darinol-primary text-white"
                     : "border-darinol-border bg-darinol-surface text-darinol-muted hover:border-darinol-primary/40 hover:text-darinol-text",
                 ].join(" ")}
               >
@@ -1828,38 +2302,39 @@ function DetailPanel({
           </div>
         </div>
 
-        <div className="mb-5 flex rounded-full border border-darinol-border bg-darinol-background p-1 lg:hidden">
-          {detailTabs.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => onTabChange(tab)}
-              className={[
-                "h-10 flex-1 rounded-full px-4 text-sm font-semibold transition",
-                activeTab === tab
-                  ? "bg-darinol-surface text-darinol-primary shadow-soft"
-                  : "text-darinol-muted hover:text-darinol-text",
-              ].join(" ")}
-            >
-              {tab === "Konten" ? t.content : t.insight}
-            </button>
-          ))}
-        </div>
-
-        <div className="hidden grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] items-start gap-4 xl:gap-5 lg:grid">
-          <div>{insightContent}</div>
+        {activeView === "Berita" ? (
+          <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(280px,0.82fr)]">
+            <div>{insightContent}</div>
+            <section className="glass-card rounded-3xl p-4">
+              <h3 className="font-heading text-lg font-semibold text-darinol-text">
+                {t.trendSignal}
+              </h3>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                <CompactStat label={t.viralScore} value={String(topic.score)} />
+                <CompactStat label="Growth" value={topic.growth} />
+                <CompactStat label="Category" value={topic.category} />
+              </div>
+              <div className="mt-4 rounded-2xl border border-darinol-border bg-darinol-background/70 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-darinol-primary">
+                  {t.selectedMaterial}
+                </p>
+                <p className="mt-2 text-sm font-medium leading-relaxed text-darinol-muted">
+                  {selectedArticleCount
+                    ? `${selectedArticleCount} ${t.materials} siap diproses Riri.`
+                    : t.markNews}
+                </p>
+              </div>
+            </section>
+          </div>
+        ) : (
           <div>{contentContent}</div>
-        </div>
-
-        <div className="lg:hidden">
-          {activeTab === "Insight" ? insightContent : contentContent}
-        </div>
+        )}
 
         <div className="mt-5 flex shrink-0 flex-col gap-3 border-t border-darinol-border pt-5 sm:flex-row lg:mt-4">
           <button
             type="button"
             onClick={onGenerateIdea}
-            className="h-12 flex-1 rounded-full bg-darinol-primary px-5 text-sm font-semibold text-white transition hover:brightness-105"
+            className="orange-gradient moving-accent h-12 flex-1 rounded-full px-5 text-sm font-semibold text-white transition hover:brightness-105"
           >
             {t.generateIdea}
           </button>
@@ -1892,7 +2367,7 @@ export default function Page() {
   const [selectedId, setSelectedId] = useState(initialTopics[0].id);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
-  const [activeDetailTab, setActiveDetailTab] = useState(detailTabs[0]);
+  const [activeMainView, setActiveMainView] = useState<MainView>("Berita");
   const [creatorMode, setCreatorMode] = useState(creatorModes[0]);
   const [specialistPlatform, setSpecialistPlatform] = useState(platforms[0]);
   const [specialistOutputFormat, setSpecialistOutputFormat] = useState(
@@ -1907,7 +2382,7 @@ export default function Page() {
   >({});
   const [contentLoading, setContentLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<"Free" | "Supporter" | null>(
-    "Free",
+    null,
   );
   const [upgradeNotice, setUpgradeNotice] = useState(false);
   const [language, setLanguage] = useState<Language>("id");
@@ -1915,11 +2390,17 @@ export default function Page() {
   const [appBooting, setAppBooting] = useState(true);
   const [updatedAt, setUpdatedAt] = useState("memuat data");
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [authMessage, setAuthMessage] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [accountEmail, setAccountEmail] = useState("");
   const t = copy[language];
 
   useEffect(() => {
     const storedLanguage = window.localStorage.getItem("darinol-language");
     const storedTheme = window.localStorage.getItem("darinol-theme");
+    const storedPlan = window.localStorage.getItem("darinol-plan");
+    const storedEmail = window.localStorage.getItem("darinol-email");
 
     if (storedLanguage === "id" || storedLanguage === "en") {
       setLanguage(storedLanguage);
@@ -1929,9 +2410,17 @@ export default function Page() {
       setThemeMode(storedTheme);
     }
 
+    if (storedPlan === "Free" || storedPlan === "Supporter") {
+      setSelectedPlan(storedPlan);
+    }
+
+    if (storedEmail) {
+      setAccountEmail(storedEmail);
+    }
+
     const timer = window.setTimeout(() => {
       setAppBooting(false);
-    }, 950);
+    }, 2100);
 
     return () => window.clearTimeout(timer);
   }, []);
@@ -1946,29 +2435,89 @@ export default function Page() {
   }, [language]);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    const supabase = getSupabaseBrowserClient();
     let active = true;
+
+    async function syncProfile() {
+      const profile = await getCurrentUserProfile();
+
+      if (!active || !profile) return;
+
+      const nextPlan = profile.plan === "free" ? "Free" : "Supporter";
+      const profileEmail = profile.email ?? "";
+
+      setSelectedPlan(nextPlan);
+      setAccountEmail(profileEmail);
+      window.localStorage.setItem("darinol-plan", nextPlan);
+      if (profileEmail) {
+        window.localStorage.setItem("darinol-email", profileEmail);
+      }
+      setAuthMessage(
+        profile.plan === "free"
+          ? "Supabase tersambung. Akun Free aktif."
+          : "Supabase tersambung. Akun Starter aktif.",
+      );
+    }
+
+    void syncProfile();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      void syncProfile();
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const cacheKey = "darinol-trends-cache";
+
+    function applyTrends(payload: TrendsPayload) {
+      if (!active || !payload.topics?.length) return;
+
+      setTopics(payload.topics);
+      setSelectedId((currentId) =>
+        payload.topics.some((topic) => topic.id === currentId)
+          ? currentId
+          : payload.topics[0].id,
+      );
+      setUpdatedAt(formatUpdatedAt(payload.updatedAt));
+    }
 
     async function loadTrends() {
       try {
+        const cachedValue = window.localStorage.getItem(cacheKey);
+
+        if (cachedValue) {
+          const cached = JSON.parse(cachedValue) as TrendsPayload & {
+            cachedAt?: number;
+          };
+          const isFresh = cached.cachedAt
+            ? Date.now() - cached.cachedAt < 5 * 60 * 1000
+            : false;
+
+          if (isFresh) {
+            applyTrends(cached);
+          }
+        }
+
         const response = await fetch("/api/trends");
-        const payload = (await response.json()) as {
-          source: string;
-          updatedAt: string;
-          topics: Topic[];
-        };
+        const payload = (await response.json()) as TrendsPayload;
 
         if (!active) return;
 
         if (payload.topics?.length) {
-          setTopics(payload.topics);
-          setSelectedId(payload.topics[0].id);
-          setUpdatedAt(
-            new Intl.DateTimeFormat("id-ID", {
-              day: "2-digit",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
-            }).format(new Date(payload.updatedAt)),
+          applyTrends(payload);
+          window.localStorage.setItem(
+            cacheKey,
+            JSON.stringify({ ...payload, cachedAt: Date.now() }),
           );
         }
       } catch {
@@ -2097,21 +2646,11 @@ export default function Page() {
   }
 
   function startContentLoading() {
-    setActiveDetailTab("Konten");
+    setActiveMainView("Buat Konten");
     setContentLoading(true);
     window.setTimeout(() => {
       setContentLoading(false);
     }, 1400);
-  }
-
-  function handleDetailTabChange(tab: string) {
-    if (tab === "Konten" && selectedArticles.length) {
-      startContentLoading();
-      return;
-    }
-
-    setActiveDetailTab(tab);
-    setContentLoading(false);
   }
 
   function handleCreateContent() {
@@ -2193,21 +2732,70 @@ export default function Page() {
     void handleSpecialistSubmit(prompt);
   }
 
-  function handleChoosePlan(plan: Plan) {
-    if (plan === "Supporter") {
-      setPaymentOpen(true);
-      setUpgradeNotice(false);
-      return;
+  async function handleChoosePlan(
+    plan: Plan,
+    email = "",
+    password = "",
+    authMode: "signin" | "signup" = "signin",
+  ) {
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+
+    setAuthMessage("");
+
+    if (isSupabaseConfigured) {
+      if (!cleanEmail || cleanPassword.length < 6) {
+        setAuthMessage("Isi email dan password minimal 6 karakter dulu.");
+        return;
+      }
+
+      setAuthLoading(true);
+
+      try {
+        const result =
+          authMode === "signup"
+            ? await signUpWithPassword(cleanEmail, cleanPassword)
+            : await signInWithPassword(cleanEmail, cleanPassword);
+        setAuthMessage(
+          result.ok
+            ? authMode === "signup"
+              ? "Akun berhasil dibuat. Kalau Supabase minta konfirmasi, cek email kamu."
+              : "Login berhasil. Akun kamu sudah tersambung."
+            : `Supabase belum berhasil: ${result.message}`,
+        );
+
+        if (!result.ok) return;
+      } finally {
+        setAuthLoading(false);
+      }
+    } else if (!isSupabaseConfigured) {
+      setAuthMessage("Supabase belum terisi di .env.local. Masuk demo dulu.");
+    } else {
+      setAuthMessage("Email kosong. Masuk demo dulu.");
+    }
+
+    if (cleanEmail) {
+      setAccountEmail(cleanEmail);
+      window.localStorage.setItem("darinol-email", cleanEmail);
     }
 
     setSelectedPlan(plan);
+    window.localStorage.setItem("darinol-plan", plan);
+    setAccountOpen(false);
+    setPaymentOpen(false);
     setUpgradeNotice(false);
   }
 
   function handlePaymentComplete() {
     setSelectedPlan("Supporter");
+    window.localStorage.setItem("darinol-plan", "Supporter");
     setPaymentOpen(false);
     setUpgradeNotice(false);
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLElement>) {
+    event.currentTarget.style.setProperty("--cursor-x", `${event.clientX}px`);
+    event.currentTarget.style.setProperty("--cursor-y", `${event.clientY}px`);
   }
 
   return (
@@ -2215,13 +2803,20 @@ export default function Page() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
+      onPointerMove={handlePointerMove}
       className="mx-auto flex min-h-dvh w-full max-w-[1680px] flex-col overflow-x-hidden px-3 py-3 sm:px-4 md:px-5 lg:px-6 lg:py-5"
     >
+      <div className="ambient-layer" aria-hidden="true" />
       <Header
         search={search}
         onSearchChange={setSearch}
         updatedAt={updatedAt}
         selectedPlan={selectedPlan}
+        accountEmail={accountEmail}
+        onAccountClick={() => {
+          setAuthMessage("");
+          setAccountOpen(true);
+        }}
         savedCount={savedTopicIds.length}
         hotNewsItems={hotNewsItems}
         language={language}
@@ -2247,97 +2842,283 @@ export default function Page() {
         onUpgrade={() => setPaymentOpen(true)}
       />
 
-      <motion.div
-        variants={staggerList}
-        initial="hidden"
-        animate="show"
-        className="grid flex-1 items-start gap-4 md:grid-cols-[minmax(300px,340px)_minmax(0,1fr)] xl:grid-cols-[minmax(330px,370px)_minmax(0,1fr)]"
-      >
-        <section className="md:sticky md:top-5">
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <h2 className="font-heading text-2xl font-semibold tracking-tight text-darinol-text">
-              {t.trending}
-            </h2>
-            <span className="text-sm font-medium text-darinol-muted">
-              {filteredTopics.length} {t.topics}
-            </span>
-          </div>
+      <MainNavigation
+        activeView={activeMainView}
+        onChange={(view) => {
+          setActiveMainView(view);
+          setContentLoading(false);
+        }}
+        t={t}
+      />
 
-          <div className="mb-5 flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible">
-            {categoryFilters.map((category) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => handleSelectCategory(category)}
-                className={[
-                  "shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition",
-                  activeCategory === category
-                    ? "border-darinol-primary bg-darinol-primary text-white"
-                    : "border-darinol-border bg-darinol-surface text-darinol-muted hover:border-darinol-primary/40 hover:text-darinol-text",
-                ].join(" ")}
-              >
-                {category === "Semua" ? t.all : category}
-              </button>
-            ))}
-          </div>
-
-          <motion.div
-            variants={staggerList}
-            className="grid gap-3 sm:grid-cols-2 md:grid-cols-1"
-          >
-            {filteredTopics.map((topic, index) => (
-              <TopicCard
-                key={topic.id}
-                topic={topic}
-                rank={index + 1}
-                selected={topic.id === selectedTopic.id}
-                onClick={() => handleSelectTopic(topic.id)}
-              />
-            ))}
-          </motion.div>
-
-          {filteredTopics.length === 0 ? (
-            <div className="mt-4 rounded-3xl border border-darinol-border bg-darinol-surface p-6 text-center shadow-soft">
-              <p className="font-heading text-lg font-semibold text-darinol-text">
-                {t.noTopicTitle}
-              </p>
-              <p className="mt-2 text-sm text-darinol-muted">
-                {t.noTopicBody}
-              </p>
+      {activeMainView === "Berita" ? (
+        <motion.section
+          variants={staggerList}
+          initial="hidden"
+          animate="show"
+          className="space-y-4"
+        >
+          <div className="glass-card rounded-[2rem] p-4 md:p-6">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="font-heading text-3xl font-semibold tracking-tight text-darinol-text">
+                  {t.newsPage}
+                </h2>
+                <p className="mt-2 text-sm font-medium text-darinol-muted">
+                  {t.newsPageHint}
+                </p>
+              </div>
+              <span className="w-fit rounded-full bg-darinol-primary/10 px-4 py-2 text-sm font-semibold text-darinol-primary">
+                {filteredTopics.length} {t.topics}
+              </span>
             </div>
-          ) : null}
 
-        </section>
+            <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+              {categoryFilters.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => handleSelectCategory(category)}
+                  className={[
+                    "shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition",
+                    activeCategory === category
+                      ? "orange-gradient border-darinol-primary text-white"
+                      : "border-darinol-border bg-darinol-surface text-darinol-muted hover:border-darinol-primary/40 hover:text-darinol-text",
+                  ].join(" ")}
+                >
+                  {category === "Semua" ? t.all : category}
+                </button>
+              ))}
+            </div>
 
-        <DetailPanel
-          topic={selectedTopic}
-          selectedArticles={selectedArticles}
-          selectedArticleUrls={selectedArticleUrls}
-          contentLoading={contentLoading}
-          selectedPlan={selectedPlan}
-          t={t}
-          activeTab={activeDetailTab}
-          onTabChange={handleDetailTabChange}
-          onToggleArticle={handleToggleArticle}
-          onCreateContent={handleCreateContent}
-          creatorMode={creatorMode}
-          onCreatorModeChange={setCreatorMode}
-          specialistPlatform={specialistPlatform}
-          specialistOutputFormat={specialistOutputFormat}
-          onSpecialistPlatformChange={setSpecialistPlatform}
-          onSpecialistOutputFormatChange={setSpecialistOutputFormat}
-          specialistMessages={specialistMessages}
-          specialistInput={specialistInput}
-          onSpecialistInputChange={setSpecialistInput}
-          onSpecialistSubmit={handleSpecialistSubmit}
-          onSpecialistQuickPrompt={handleSpecialistQuickPrompt}
-          specialistLoading={specialistLoading}
-          onNextTopic={handleNextTopic}
-          onGenerateIdea={handleGenerateIdea}
-          onSaveTopic={handleSaveTopic}
-          saved={savedTopicIds.includes(selectedTopic.id)}
-        />
-      </motion.div>
+            <motion.div
+              variants={staggerList}
+              className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+            >
+              {filteredTopics.map((topic, index) => (
+                <TopicCard
+                  key={topic.id}
+                  topic={topic}
+                  rank={index + 1}
+                  selected={topic.id === selectedTopic.id}
+                  onClick={() => handleSelectTopic(topic.id)}
+                />
+              ))}
+            </motion.div>
+
+            {filteredTopics.length === 0 ? (
+              <div className="mt-4 rounded-3xl border border-darinol-border bg-darinol-surface p-6 text-center shadow-soft">
+                <p className="font-heading text-lg font-semibold text-darinol-text">
+                  {t.noTopicTitle}
+                </p>
+                <p className="mt-2 text-sm text-darinol-muted">
+                  {t.noTopicBody}
+                </p>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="glass-card rounded-[2rem] p-4 md:p-6">
+            <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-darinol-primary/10 px-3 py-1 text-xs font-semibold text-darinol-primary">
+                    {selectedTopic.category}
+                  </span>
+                  <span className="rounded-full bg-darinol-primary/10 px-3 py-1 text-xs font-semibold text-darinol-primary">
+                    {selectedTopic.growth}
+                  </span>
+                </div>
+                <h3 className="font-heading text-3xl font-semibold tracking-tight text-darinol-text">
+                  {selectedTopic.name}
+                </h3>
+                <p className="mt-2 text-sm font-medium text-darinol-muted">
+                  {t.markNews}
+                </p>
+              </div>
+              <div className="grid w-full gap-3 sm:grid-cols-3 md:w-auto">
+                <CompactStat label={t.viralScore} value={String(selectedTopic.score)} />
+                <CompactStat label="Growth" value={selectedTopic.growth} />
+                <CompactStat label={t.selectedMaterial} value={String(selectedArticleUrls.length)} />
+              </div>
+            </div>
+
+            {selectedTopic.articles.length ? (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {selectedTopic.articles.slice(0, 15).map((article) => {
+                  const selected = selectedArticleUrls.includes(article.url);
+
+                  return (
+                    <article
+                      key={`${article.source}-${article.url}`}
+                      className={[
+                        "rounded-3xl border p-4 transition backdrop-blur-xl",
+                        selected
+                          ? "border-darinol-primary bg-darinol-primary/5"
+                          : "border-white/45 bg-white/25 hover:border-darinol-primary/35 dark:border-white/10 dark:bg-white/5",
+                      ].join(" ")}
+                    >
+                      <div className="flex items-start gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleArticle(article.url)}
+                          className={[
+                            "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition",
+                            selected
+                              ? "orange-gradient border-darinol-primary text-white"
+                              : "border-darinol-border bg-darinol-surface text-transparent hover:border-darinol-primary",
+                          ].join(" ")}
+                          aria-label={`Pakai artikel ${article.title}`}
+                        >
+                          {selected ? (
+                            <svg
+                              aria-hidden="true"
+                              className="h-4 w-4 text-white"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="m5 12 4 4L19 6" />
+                            </svg>
+                          ) : null}
+                        </button>
+                        <div className="min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleArticle(article.url)}
+                            className="text-left text-base font-semibold leading-relaxed text-darinol-text"
+                          >
+                            {article.title}
+                          </button>
+                          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-medium text-darinol-muted">
+                            <span>
+                              {article.source} - {formatArticleTime(article.publishedAt)}
+                            </span>
+                            <a
+                              href={article.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-semibold text-darinol-primary hover:underline"
+                            >
+                              {t.openSource}
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="glass-soft rounded-2xl px-4 py-3 text-sm text-darinol-muted">
+                {t.noSource}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={handleCreateContent}
+              disabled={!selectedArticleUrls.length}
+              className={[
+                "mt-5 h-12 w-full rounded-full px-5 text-sm font-semibold transition md:w-auto md:min-w-56",
+                selectedArticleUrls.length
+                  ? "orange-gradient moving-accent text-white hover:brightness-105"
+                  : "cursor-not-allowed bg-darinol-surface text-darinol-muted",
+              ].join(" ")}
+            >
+              {selectedArticleUrls.length
+                ? `${t.createContent} (${selectedArticleUrls.length})`
+                : t.markToCreate}
+            </button>
+
+          </div>
+        </motion.section>
+      ) : (
+        <motion.section
+          variants={staggerList}
+          initial="hidden"
+          animate="show"
+          className="space-y-4"
+        >
+          <div className="glass-card rounded-[2rem] p-4 md:p-6">
+            <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="font-heading text-3xl font-semibold tracking-tight text-darinol-text">
+                  {t.contentPage}
+                </h2>
+                <p className="mt-2 text-sm font-medium text-darinol-muted">
+                  {t.contentPageHint}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveMainView("Berita")}
+                className="h-11 w-fit rounded-full border border-darinol-border bg-darinol-surface px-5 text-sm font-semibold text-darinol-text transition hover:border-darinol-primary/40 hover:bg-darinol-primary/5"
+              >
+                {t.newsPage}
+              </button>
+            </div>
+
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {filteredTopics.map((topic, index) => (
+                <button
+                  key={topic.id}
+                  type="button"
+                  onClick={() => handleSelectTopic(topic.id)}
+                  className={[
+                    "min-w-56 rounded-2xl border p-3 text-left transition",
+                    topic.id === selectedTopic.id
+                      ? "orange-gradient border-darinol-primary text-white"
+                      : "border-darinol-border bg-darinol-surface text-darinol-text hover:border-darinol-primary/35",
+                  ].join(" ")}
+                >
+                  <span className="text-xs font-semibold opacity-70">
+                    #{index + 1} - {topic.category}
+                  </span>
+                  <span className="mt-1 block font-heading text-lg font-semibold">
+                    {topic.name}
+                  </span>
+                  <span className="mt-1 block text-xs font-semibold opacity-80">
+                    {topic.score} score - {topic.growth}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <DetailPanel
+            topic={selectedTopic}
+            selectedArticles={selectedArticles}
+            selectedArticleUrls={selectedArticleUrls}
+            contentLoading={contentLoading}
+            selectedPlan={selectedPlan}
+            t={t}
+            activeView={activeMainView}
+            onViewChange={setActiveMainView}
+            onToggleArticle={handleToggleArticle}
+            onCreateContent={handleCreateContent}
+            creatorMode={creatorMode}
+            onCreatorModeChange={setCreatorMode}
+            specialistPlatform={specialistPlatform}
+            specialistOutputFormat={specialistOutputFormat}
+            onSpecialistPlatformChange={setSpecialistPlatform}
+            onSpecialistOutputFormatChange={setSpecialistOutputFormat}
+            specialistMessages={specialistMessages}
+            specialistInput={specialistInput}
+            onSpecialistInputChange={setSpecialistInput}
+            onSpecialistSubmit={handleSpecialistSubmit}
+            onSpecialistQuickPrompt={handleSpecialistQuickPrompt}
+            specialistLoading={specialistLoading}
+            onNextTopic={handleNextTopic}
+            onGenerateIdea={handleGenerateIdea}
+            onSaveTopic={handleSaveTopic}
+            saved={savedTopicIds.includes(selectedTopic.id)}
+          />
+        </motion.section>
+      )}
 
       {appBooting ? <AppLoadingOverlay t={t} /> : null}
       {paymentOpen ? (
@@ -2347,11 +3128,14 @@ export default function Page() {
           onPaid={handlePaymentComplete}
         />
       ) : null}
-      {!appBooting && !selectedPlan && !paymentOpen ? (
+      {!appBooting && (!selectedPlan || accountOpen) && !paymentOpen ? (
         <OnboardingOverlay
           onChoosePlan={handleChoosePlan}
+          onClose={selectedPlan ? () => setAccountOpen(false) : undefined}
           language={language}
           t={t}
+          authMessage={authMessage}
+          authLoading={authLoading}
         />
       ) : null}
     </motion.main>

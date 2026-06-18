@@ -1,0 +1,22 @@
+{
+  "name": "Darinol.id",
+  "short_name": "Darinol",
+  "description": "Dari Tren Jadi Konten.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F2EE",
+  "theme_color": "#FF7A45",
+  "icons": [
+    {
+      "src": "/darinol-icon.png?v=6",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico?v=6",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    }
+  ]
+}
