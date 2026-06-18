@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchRssArticles } from "@/lib/rss";
-import { sampleCultureTrends, type RadarType } from "@/lib/culture-trends";
+import { fetchCultureTrends, sampleCultureTrends, type RadarType } from "@/lib/culture-trends";
 
 type NewsArticle = {
   source?: { name?: string | null };
@@ -1045,14 +1045,14 @@ function buildTrendsPayload({
   radarType: RadarType | "all";
   error?: string;
 }) {
-  const mixedTopics = radarType === "culture"
-    ? sampleCultureTrends
-    : radarType === "all"
-      ? [...sampleCultureTrends, ...topics]
+  const mixedTopics = topics.length
+    ? topics
+    : radarType === "culture" || radarType === "all"
+      ? sampleCultureTrends
       : topics;
 
   return {
-    source: radarType === "culture" ? "sample-culture-placeholder" : source,
+    source,
     updatedAt: new Date().toISOString(),
     radar_type: radarType,
     error,
@@ -1065,6 +1065,15 @@ export async function GET(request: Request) {
   const apiKey = process.env.NEWS_API_KEY;
   const country = process.env.NEWS_COUNTRY ?? "id";
   const pageSize = process.env.NEWS_PAGE_SIZE ?? "40";
+  const culturePayloadPromise =
+    radarType === "culture" || radarType === "all"
+      ? fetchCultureTrends().catch(() => ({
+          source: "sample-culture-placeholder",
+          youtube_count: 0,
+          reddit_count: 0,
+          topics: sampleCultureTrends,
+        }))
+      : Promise.resolve(null);
 
   if (!apiKey) {
     const [rssArticles, fastSignalArticles] = await Promise.all([
@@ -1075,9 +1084,13 @@ export async function GET(request: Request) {
 
     const newsTopics = topics.length ? topics : fallbackTopics;
 
+    const culturePayload = await culturePayloadPromise;
+
     return trendsJson(buildTrendsPayload({
       source: topics.length ? "fast-free" : "fallback",
-      topics: newsTopics,
+      topics: culturePayload && radarType !== "news"
+        ? ([...culturePayload.topics, ...newsTopics] as Topic[])
+        : newsTopics,
       radarType,
     }));
   }
@@ -1136,6 +1149,7 @@ export async function GET(request: Request) {
 
     const rssArticles = await rssArticlesPromise;
     const fastSignalArticles = await fastSignalArticlesPromise;
+    const culturePayload = await culturePayloadPromise;
     const articles = [...newsApiArticles, ...rssArticles, ...fastSignalArticles];
     const topics = buildTopics(articles);
 
@@ -1151,7 +1165,9 @@ export async function GET(request: Request) {
               ? "rss"
               : "newsapi"
         : "fallback",
-      topics: topics.length ? topics : fallbackTopics,
+      topics: culturePayload && radarType !== "news"
+        ? ([...culturePayload.topics, ...(topics.length ? topics : fallbackTopics)] as Topic[])
+        : topics.length ? topics : fallbackTopics,
       radarType,
     }));
   } catch (error) {

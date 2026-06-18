@@ -41,7 +41,42 @@ export type CultureTrend = {
   is_sample: boolean;
 };
 
-function scoreCultureTrend({
+type RedditListing = {
+  data?: {
+    children?: Array<{
+      data?: {
+        id?: string;
+        title?: string;
+        subreddit?: string;
+        permalink?: string;
+        url?: string;
+        created_utc?: number;
+        score?: number;
+        num_comments?: number;
+        over_18?: boolean;
+      };
+    }>;
+  };
+};
+
+type YouTubeVideosPayload = {
+  items?: Array<{
+    id?: string;
+    snippet?: {
+      title?: string;
+      channelTitle?: string;
+      publishedAt?: string;
+      categoryId?: string;
+    };
+    statistics?: {
+      viewCount?: string;
+      likeCount?: string;
+      commentCount?: string;
+    };
+  }>;
+};
+
+export function scoreCultureTrend({
   frequency_score,
   recency_score,
   engagement_score,
@@ -62,6 +97,124 @@ function scoreCultureTrend({
   return {
     culture_score,
     opportunity_score,
+  };
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function clampScore(value: number) {
+  return Math.max(0, Math.min(30, Math.round(value)));
+}
+
+function sourceUrlFromReddit(permalink?: string, url?: string) {
+  if (permalink) return `https://www.reddit.com${permalink}`;
+  return url ?? "https://www.reddit.com";
+}
+
+function inferRedditCategory(subreddit?: string, title = ""): CultureCategory {
+  const text = `${subreddit ?? ""} ${title}`.toLowerCase();
+
+  if (text.includes("gaming") || text.includes("game")) return "gaming";
+  if (text.includes("movie") || text.includes("film") || text.includes("series")) return "film";
+  if (text.includes("fashion") || text.includes("streetwear")) return "fashion";
+  if (text.includes("food") || text.includes("kuliner")) return "food";
+  if (text.includes("beauty") || text.includes("makeup")) return "beauty";
+  if (text.includes("slang") || text.includes("bahasa")) return "internet_slang";
+  if (text.includes("meme")) return "meme";
+  if (text.includes("popculture") || text.includes("entertainment")) return "entertainment";
+  return "creator_trend";
+}
+
+function inferYouTubeCategory(categoryId?: string, title = ""): CultureCategory {
+  const lower = title.toLowerCase();
+
+  if (categoryId === "10" || lower.includes("music") || lower.includes("lagu")) return "music";
+  if (categoryId === "20" || lower.includes("game")) return "gaming";
+  if (categoryId === "24") return "entertainment";
+  if (categoryId === "1" || lower.includes("film") || lower.includes("series")) return "film";
+  if (lower.includes("food") || lower.includes("makan")) return "food";
+  if (lower.includes("beauty") || lower.includes("makeup")) return "beauty";
+  if (lower.includes("fashion") || lower.includes("outfit")) return "fashion";
+  return "creator_trend";
+}
+
+function buildCultureTrend({
+  id,
+  name,
+  culture_category,
+  source,
+  sourceUrl,
+  publishedAt,
+  frequency_score,
+  recency_score,
+  engagement_score,
+  cross_platform_score,
+  competition_score = null,
+  whyViral,
+  ideas,
+  is_sample = false,
+}: {
+  id: string;
+  name: string;
+  culture_category: CultureCategory;
+  source: string;
+  sourceUrl: string;
+  publishedAt: string | null;
+  frequency_score: number;
+  recency_score: number;
+  engagement_score: number;
+  cross_platform_score: number;
+  competition_score?: number | null;
+  whyViral: string[];
+  ideas: string[];
+  is_sample?: boolean;
+}): CultureTrend {
+  const scores = scoreCultureTrend({
+    frequency_score,
+    recency_score,
+    engagement_score,
+    cross_platform_score,
+    competition_score,
+  });
+  const score = Math.max(60, Math.min(99, scores.culture_score));
+
+  return {
+    id,
+    name,
+    category: "Culture",
+    culture_category,
+    radar_type: "culture",
+    source,
+    score,
+    growth: `+${Math.min(240, 60 + frequency_score * 4 + engagement_score * 3)}%`,
+    culture_score: scores.culture_score,
+    frequency_score,
+    recency_score,
+    engagement_score,
+    cross_platform_score,
+    competition_score,
+    opportunity_score: scores.opportunity_score,
+    whyViral,
+    ideas,
+    titles: [
+      name,
+      `Kenapa ${name} mulai ramai?`,
+      `Angle konten dari trend ${name}`,
+    ],
+    articles: [
+      {
+        title: name,
+        source,
+        url: sourceUrl,
+        publishedAt,
+      },
+    ],
+    is_sample,
   };
 }
 
@@ -226,3 +379,168 @@ export const sampleCultureTrends: CultureTrend[] = [
     ],
   }),
 ];
+
+export const cultureSubreddits = [
+  "indonesia",
+  "memes",
+  "TikTokCringe",
+  "popculturechat",
+  "gaming",
+  "movies",
+  "streetwear",
+] as const;
+
+async function fetchJson<T>(url: string, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      next: { revalidate: 300 },
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Darinol.id Culture Radar/0.1",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Fetch failed ${response.status}`);
+    }
+
+    return (await response.json()) as T;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function fetchRedditCultureTrends() {
+  const settled = await Promise.allSettled(
+    cultureSubreddits.map(async (subreddit) => {
+      const payload = await fetchJson<RedditListing>(
+        `https://www.reddit.com/r/${subreddit}/hot.json?limit=8`,
+      );
+
+      return (payload.data?.children ?? []).flatMap((child) => {
+        const post = child.data;
+        if (!post?.id || !post.title || post.over_18) return [];
+
+        const score = post.score ?? 0;
+        const comments = post.num_comments ?? 0;
+        const publishedAt = post.created_utc
+          ? new Date(post.created_utc * 1000).toISOString()
+          : null;
+        const frequency_score = clampScore(10 + comments / 18);
+        const recency_score = clampScore(24);
+        const engagement_score = clampScore(8 + score / 450 + comments / 35);
+        const culture_category = inferRedditCategory(post.subreddit, post.title);
+
+        return [
+          buildCultureTrend({
+            id: `reddit-${slugify(post.subreddit ?? subreddit)}-${post.id}`,
+            name: post.title,
+            culture_category,
+            source: `Reddit - r/${post.subreddit ?? subreddit}`,
+            sourceUrl: sourceUrlFromReddit(post.permalink, post.url),
+            publishedAt,
+            frequency_score,
+            recency_score,
+            engagement_score,
+            cross_platform_score: 4,
+            whyViral: [
+              `Naik di komunitas r/${post.subreddit ?? subreddit}.`,
+              `${score.toLocaleString("id-ID")} upvotes dan ${comments.toLocaleString("id-ID")} komentar terdeteksi dari Reddit.`,
+              "Cocok dipakai sebagai sinyal awal culture, meme, atau creator trend.",
+            ],
+            ideas: [
+              "Buat versi lokal Indonesia",
+              "Ubah jadi POV pendek",
+              "Ambil format diskusinya untuk carousel",
+              "Buat reaction atau explainer ringan",
+            ],
+          }),
+        ];
+      });
+    }),
+  );
+
+  return settled
+    .flatMap((result) => (result.status === "fulfilled" ? result.value : []))
+    .sort((a, b) => b.culture_score - a.culture_score)
+    .slice(0, 18);
+}
+
+export async function fetchYouTubeCultureTrends() {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+
+  if (!apiKey) return [];
+
+  const url = new URL("https://www.googleapis.com/youtube/v3/videos");
+  url.searchParams.set("part", "snippet,statistics");
+  url.searchParams.set("chart", "mostPopular");
+  url.searchParams.set("regionCode", "ID");
+  url.searchParams.set("maxResults", "20");
+  url.searchParams.set("key", apiKey);
+
+  const payload = await fetchJson<YouTubeVideosPayload>(url.toString());
+
+  return (payload.items ?? []).flatMap((item) => {
+    if (!item.id || !item.snippet?.title) return [];
+
+    const views = Number(item.statistics?.viewCount ?? 0);
+    const likes = Number(item.statistics?.likeCount ?? 0);
+    const comments = Number(item.statistics?.commentCount ?? 0);
+    const engagementBase = likes + comments * 4;
+    const culture_category = inferYouTubeCategory(item.snippet.categoryId, item.snippet.title);
+    const frequency_score = clampScore(14 + Math.log10(Math.max(1, views)));
+    const recency_score = clampScore(22);
+    const engagement_score = clampScore(10 + Math.log10(Math.max(1, engagementBase)) * 5);
+
+    return [
+      buildCultureTrend({
+        id: `youtube-${item.id}`,
+        name: item.snippet.title,
+        culture_category,
+        source: item.snippet.channelTitle
+          ? `YouTube - ${item.snippet.channelTitle}`
+          : "YouTube",
+        sourceUrl: `https://www.youtube.com/watch?v=${item.id}`,
+        publishedAt: item.snippet.publishedAt ?? null,
+        frequency_score,
+        recency_score,
+        engagement_score,
+        cross_platform_score: 6,
+        whyViral: [
+          "Masuk daftar video populer YouTube Indonesia.",
+          `${views.toLocaleString("id-ID")} views terdeteksi dari YouTube Data API.`,
+          "Bisa dipakai untuk membaca arah minat audiens dan format konten yang sedang naik.",
+        ],
+        ideas: [
+          "Buat hook dari judul video",
+          "Ubah jadi short video commentary",
+          "Ambil format storytelling-nya",
+          "Buat carousel insight untuk niche kamu",
+        ],
+      }),
+    ];
+  });
+}
+
+export async function fetchCultureTrends() {
+  const [youtubeResult, redditResult] = await Promise.allSettled([
+    fetchYouTubeCultureTrends(),
+    fetchRedditCultureTrends(),
+  ]);
+  const youtube = youtubeResult.status === "fulfilled" ? youtubeResult.value : [];
+  const reddit = redditResult.status === "fulfilled" ? redditResult.value : [];
+  const liveTopics = [...youtube, ...reddit]
+    .sort((a, b) => b.culture_score - a.culture_score)
+    .slice(0, 24);
+
+  return {
+    source: liveTopics.length ? "youtube+reddit" : "sample-culture-placeholder",
+    youtube_count: youtube.length,
+    reddit_count: reddit.length,
+    topics: liveTopics.length ? liveTopics : sampleCultureTrends,
+  };
+}

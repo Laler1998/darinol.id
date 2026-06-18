@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sampleCultureTrends } from "@/lib/culture-trends";
+import { fetchYouTubeCultureTrends, sampleCultureTrends } from "@/lib/culture-trends";
 
 export async function POST() {
   const apiKey = process.env.YOUTUBE_API_KEY;
@@ -17,10 +17,14 @@ export async function POST() {
     });
   }
 
+  const topics = await fetchYouTubeCultureTrends().catch(() => []);
+
   return NextResponse.json({
-    source: "youtube-prepared",
-    status: "prepared",
-    note: "YouTube Data API fetch endpoint is reserved for most popular videos by category and region. Live ingestion is not enabled in this MVP response.",
-    topics: [],
+    source: topics.length ? "youtube-most-popular" : "youtube-fallback",
+    status: topics.length ? "live" : "fallback",
+    note: topics.length
+      ? "Fetched from YouTube Data API most popular videos for Indonesia."
+      : "YouTube Data API did not return culture trends. Returning sample placeholder culture trends.",
+    topics: topics.length ? topics : sampleCultureTrends,
   });
 }
