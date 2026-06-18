@@ -2,7 +2,7 @@
 
 import { type PointerEvent, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { getCurrentUserProfile, signInWithPassword, signUpWithPassword } from "@/lib/supabase/auth";
+import { getCurrentUserProfile, signInWithGoogle, signInWithPassword, signUpWithPassword } from "@/lib/supabase/auth";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type Topic = {
@@ -143,6 +143,8 @@ const copy = {
     loginPasswordPlaceholder: "Minimal 6 karakter",
     loginModeSignIn: "Masuk",
     loginModeSignUp: "Daftar",
+    loginWithGoogle: "Masuk dengan Google",
+    loginDivider: "atau pakai email",
     continueFree: "Masuk sebagai Free",
     chooseStarter: "Pilih Starter",
     starterBadge: "Starter",
@@ -250,6 +252,8 @@ const copy = {
     loginPasswordPlaceholder: "At least 6 characters",
     loginModeSignIn: "Sign in",
     loginModeSignUp: "Sign up",
+    loginWithGoogle: "Continue with Google",
+    loginDivider: "or use email",
     continueFree: "Enter as Free",
     chooseStarter: "Choose Starter",
     starterBadge: "Starter",
@@ -798,6 +802,7 @@ function PlanPreview({
 
 function OnboardingOverlay({
   onChoosePlan,
+  onGoogleLogin,
   onClose,
   language,
   t,
@@ -810,6 +815,7 @@ function OnboardingOverlay({
     password: string,
     authMode: "signin" | "signup",
   ) => void;
+  onGoogleLogin: (plan: Plan) => void;
   onClose?: () => void;
   language: Language;
   t: Copy;
@@ -939,6 +945,26 @@ function OnboardingOverlay({
                   {mode === "signin" ? t.loginModeSignIn : t.loginModeSignUp}
                 </button>
               ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onGoogleLogin(selectedLoginPlan)}
+              disabled={authLoading}
+              className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-darinol-border bg-darinol-surface/85 px-5 text-sm font-semibold text-darinol-text transition hover:border-darinol-primary/40 hover:bg-darinol-primary/5 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-white text-sm font-bold text-[#4285F4]">
+                G
+              </span>
+              {t.loginWithGoogle}
+            </button>
+
+            <div className="my-4 flex items-center gap-3">
+              <span className="h-px flex-1 bg-darinol-border" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+                {t.loginDivider}
+              </span>
+              <span className="h-px flex-1 bg-darinol-border" />
             </div>
 
             <label className="block">
@@ -2826,6 +2852,30 @@ export default function Page() {
     setUpgradeNotice(false);
   }
 
+  async function handleGoogleLogin(plan: Plan) {
+    setAuthMessage("");
+
+    if (!isSupabaseConfigured) {
+      setAuthMessage("Supabase belum terisi di Vercel. Login Google belum bisa dipakai.");
+      return;
+    }
+
+    setAuthLoading(true);
+    window.localStorage.setItem("darinol-pending-plan", plan);
+
+    try {
+      const result = await signInWithGoogle(window.location.origin);
+
+      if (!result.ok) {
+        setAuthMessage(result.message);
+        setAuthLoading(false);
+      }
+    } catch {
+      setAuthMessage("Login Google belum berhasil. Cek koneksi, lalu coba lagi.");
+      setAuthLoading(false);
+    }
+  }
+
   function handlePaymentComplete() {
     setSelectedPlan("Supporter");
     window.localStorage.setItem("darinol-plan", "Supporter");
@@ -3172,6 +3222,7 @@ export default function Page() {
       {onboardingOpen ? (
         <OnboardingOverlay
           onChoosePlan={handleChoosePlan}
+          onGoogleLogin={handleGoogleLogin}
           onClose={selectedPlan ? () => setAccountOpen(false) : undefined}
           language={language}
           t={t}

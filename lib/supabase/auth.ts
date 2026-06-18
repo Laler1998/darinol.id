@@ -135,6 +135,42 @@ export async function signInWithPassword(email: string, password: string) {
   };
 }
 
+export async function signInWithGoogle(redirectTo: string) {
+  if (!isSupabaseConfigured) {
+    return {
+      ok: false,
+      message: "Supabase belum dikonfigurasi.",
+    };
+  }
+
+  const supabase = getSupabaseBrowserClient();
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo,
+    },
+  }).catch((error: unknown) => ({
+    error: {
+      message: friendlyUnexpectedAuthMessage(error),
+    },
+  }));
+
+  if (error) {
+    const authError = error as { message: string; code?: string; status?: number };
+
+    return {
+      ok: false,
+      message: friendlyAuthMessage(authError.message, authError.code, authError.status),
+    };
+  }
+
+  return {
+    ok: true,
+    message: "Mengalihkan ke Google untuk login.",
+  };
+}
+
 export async function getCurrentUserProfile(): Promise<ProfilePreview | null> {
   if (!isSupabaseConfigured) return null;
 
