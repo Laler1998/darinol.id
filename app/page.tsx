@@ -452,6 +452,7 @@ function Header({
   onAccountClick,
   savedCount,
   hotNewsItems,
+  isMobile,
   language,
   onLanguageChange,
   themeMode,
@@ -466,12 +467,17 @@ function Header({
   onAccountClick: () => void;
   savedCount: number;
   hotNewsItems: ReturnType<typeof getHotNewsItems>;
+  isMobile: boolean;
   language: Language;
   onLanguageChange: (language: Language) => void;
   themeMode: ThemeMode;
   onThemeToggle: () => void;
   t: Copy;
 }) {
+  const tickerItems = isMobile
+    ? hotNewsItems.slice(0, 4)
+    : [...hotNewsItems, ...hotNewsItems];
+
   return (
     <header className="shrink-0 pb-3 lg:pb-4">
       <div className="grid gap-3 lg:grid-cols-[1fr_auto_1fr] lg:items-start">
@@ -560,8 +566,15 @@ function Header({
             Live
           </span>
           <div className="min-w-0 flex-1 overflow-hidden">
-            <div className="flex w-max animate-[ticker_42s_linear_infinite] items-center gap-4 hover:[animation-play-state:paused]">
-              {[...hotNewsItems, ...hotNewsItems].map((item, index) => (
+            <div
+              className={[
+                "flex w-max items-center gap-4",
+                isMobile
+                  ? "overflow-x-auto"
+                  : "animate-[ticker_42s_linear_infinite] hover:[animation-play-state:paused]",
+              ].join(" ")}
+            >
+              {tickerItems.map((item, index) => (
                 <span
                   key={`${item.label}-${item.text}-${index}`}
                   className="flex items-center gap-2 whitespace-nowrap text-xs font-semibold text-darinol-muted"
@@ -824,14 +837,14 @@ function OnboardingOverlay({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-darinol-text/12 px-5 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex h-dvh items-start justify-center overflow-y-auto overscroll-contain bg-darinol-text/12 px-3 py-3 backdrop-blur-sm [-webkit-overflow-scrolling:touch] sm:items-center sm:px-5 sm:py-5"
     >
       <div className="ambient-layer" aria-hidden="true" />
       <motion.section
         initial={{ opacity: 0, y: 18, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 24 }}
-        className="glass-card relative w-full max-w-5xl overflow-hidden rounded-[2rem] p-4 md:p-6 lg:p-8"
+        className="glass-card relative max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl overflow-y-auto overscroll-contain rounded-[1.5rem] p-4 [-webkit-overflow-scrolling:touch] sm:max-h-none sm:overflow-hidden sm:rounded-[2rem] md:p-6 lg:p-8"
       >
         {onClose ? (
           <button
@@ -861,9 +874,9 @@ function OnboardingOverlay({
           className="pointer-events-none absolute -top-24 left-0 h-48 w-72 rounded-full bg-darinol-primary/20 blur-3xl"
         />
         <div className="relative grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-          <div className="py-2 lg:py-8">
-            <div className="mb-7 flex items-center gap-4">
-              <BrandIcon className="h-16 w-16" animated reveal />
+          <div className="py-1 lg:py-8">
+            <div className="mb-4 flex items-center gap-3 sm:mb-7 sm:gap-4">
+              <BrandIcon className="h-12 w-12 sm:h-16 sm:w-16" animated reveal />
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-darinol-primary">
                   Darinol.id
@@ -885,7 +898,7 @@ function OnboardingOverlay({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.68, duration: 0.55, ease: "easeOut" }}
-              className="mt-3 max-w-xl font-heading text-4xl font-semibold tracking-tight text-darinol-text md:text-5xl"
+              className="mt-2 max-w-xl font-heading text-3xl font-semibold tracking-tight text-darinol-text sm:mt-3 md:text-5xl"
             >
               {t.onboardingTitle}
             </motion.h2>
@@ -893,12 +906,12 @@ function OnboardingOverlay({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.82, duration: 0.55, ease: "easeOut" }}
-              className="mt-4 max-w-lg text-sm leading-relaxed text-darinol-muted"
+              className="mt-3 max-w-lg text-sm leading-relaxed text-darinol-muted sm:mt-4"
             >
               {t.onboardingBody}
             </motion.p>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            <div className="mt-5 grid gap-3 sm:mt-8 sm:grid-cols-2">
               <PlanPreview title={t.freeTitle} body={t.freeBenefit} />
               <PlanPreview title={t.starterBadge} body={t.supporterBenefit} highlight />
             </div>
@@ -1222,13 +1235,13 @@ function PaymentModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-darinol-text/25 px-5 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-darinol-text/25 px-3 py-4 backdrop-blur-sm sm:items-center sm:px-5"
     >
       <motion.section
         initial={{ opacity: 0, y: 18, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 24 }}
-        className="glass-card w-full max-w-md rounded-[2rem] p-6"
+        className="glass-card w-full max-w-md rounded-[1.5rem] p-4 sm:rounded-[2rem] sm:p-6"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -2388,6 +2401,7 @@ export default function Page() {
   const [language, setLanguage] = useState<Language>("id");
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
   const [appBooting, setAppBooting] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const [updatedAt, setUpdatedAt] = useState("memuat data");
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -2395,6 +2409,7 @@ export default function Page() {
   const [authLoading, setAuthLoading] = useState(false);
   const [accountEmail, setAccountEmail] = useState("");
   const t = copy[language];
+  const onboardingOpen = !appBooting && (!selectedPlan || accountOpen) && !paymentOpen;
 
   useEffect(() => {
     const storedLanguage = window.localStorage.getItem("darinol-language");
@@ -2426,6 +2441,16 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(query.matches);
+
+    update();
+    query.addEventListener("change", update);
+
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
     document.documentElement.classList.toggle("dark", themeMode === "dark");
     window.localStorage.setItem("darinol-theme", themeMode);
   }, [themeMode]);
@@ -2433,6 +2458,17 @@ export default function Page() {
   useEffect(() => {
     window.localStorage.setItem("darinol-language", language);
   }, [language]);
+
+  useEffect(() => {
+    if (!onboardingOpen && !paymentOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [onboardingOpen, paymentOpen]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -2551,6 +2587,10 @@ export default function Page() {
   const selectedArticleUrls = selectedArticleUrlsByTopic[selectedTopic.id] ?? [];
   const selectedArticles = getSelectedArticles(selectedTopic, selectedArticleUrls);
   const hotNewsItems = useMemo(() => getHotNewsItems(topics), [topics]);
+  const visibleTopics = isMobile ? filteredTopics.slice(0, 8) : filteredTopics;
+  const visibleArticles = isMobile
+    ? selectedTopic.articles.slice(0, 6)
+    : selectedTopic.articles.slice(0, 15);
   function handleSelectTopic(topicId: string) {
     setSelectedId(topicId);
     setContentLoading(false);
@@ -2803,7 +2843,7 @@ export default function Page() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-      onPointerMove={handlePointerMove}
+      onPointerMove={isMobile ? undefined : handlePointerMove}
       className="mx-auto flex min-h-dvh w-full max-w-[1680px] flex-col overflow-x-hidden px-3 py-3 sm:px-4 md:px-5 lg:px-6 lg:py-5"
     >
       <div className="ambient-layer" aria-hidden="true" />
@@ -2819,6 +2859,7 @@ export default function Page() {
         }}
         savedCount={savedTopicIds.length}
         hotNewsItems={hotNewsItems}
+        isMobile={isMobile}
         language={language}
         onLanguageChange={setLanguage}
         themeMode={themeMode}
@@ -2895,7 +2936,7 @@ export default function Page() {
               variants={staggerList}
               className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
             >
-              {filteredTopics.map((topic, index) => (
+              {visibleTopics.map((topic, index) => (
                 <TopicCard
                   key={topic.id}
                   topic={topic}
@@ -2945,7 +2986,7 @@ export default function Page() {
 
             {selectedTopic.articles.length ? (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {selectedTopic.articles.slice(0, 15).map((article) => {
+                {visibleArticles.map((article) => {
                   const selected = selectedArticleUrls.includes(article.url);
 
                   return (
@@ -3063,7 +3104,7 @@ export default function Page() {
             </div>
 
             <div className="flex gap-3 overflow-x-auto pb-1">
-              {filteredTopics.map((topic, index) => (
+              {visibleTopics.map((topic, index) => (
                 <button
                   key={topic.id}
                   type="button"
@@ -3128,7 +3169,7 @@ export default function Page() {
           onPaid={handlePaymentComplete}
         />
       ) : null}
-      {!appBooting && (!selectedPlan || accountOpen) && !paymentOpen ? (
+      {onboardingOpen ? (
         <OnboardingOverlay
           onChoosePlan={handleChoosePlan}
           onClose={selectedPlan ? () => setAccountOpen(false) : undefined}
