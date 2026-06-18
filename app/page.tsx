@@ -1552,47 +1552,34 @@ function MainNavigation({
   onChange: (view: MainView) => void;
   t: Copy;
 }) {
-  const views: Array<{ id: MainView; title: string; hint: string }> = [
-    { id: "Berita", title: t.newsPage, hint: t.newsPageHint },
-    { id: "Buat Konten", title: t.contentPage, hint: t.contentPageHint },
-  ];
-
   return (
-    <nav className="glass-soft mb-4 grid gap-2 rounded-[2rem] p-2 md:grid-cols-2">
-      {views.map((view) => {
-        const active = activeView === view.id;
-
-        return (
+    <nav className="glass-soft mb-4 flex flex-col gap-3 rounded-[2rem] p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-heading text-lg font-semibold text-darinol-text">
+          {t.contentPage}
+        </p>
+        <p className="mt-1 text-sm font-medium leading-relaxed text-darinol-muted">
+          {t.contentPageHint}
+        </p>
+      </div>
+      <div className="flex shrink-0 gap-2">
+        {activeView === "Buat Konten" ? (
           <button
-            key={view.id}
             type="button"
-            onClick={() => onChange(view.id)}
-            className={[
-              "rounded-[1.5rem] border p-4 text-left transition",
-              active
-                ? "orange-gradient border-darinol-primary text-white shadow-soft"
-                : "border-transparent bg-transparent text-darinol-text hover:bg-darinol-surface/55",
-            ].join(" ")}
+            onClick={() => onChange("Berita")}
+            className="h-11 rounded-full border border-darinol-border bg-darinol-surface px-4 text-sm font-semibold text-darinol-text transition hover:border-darinol-primary/40 hover:bg-darinol-primary/5"
           >
-            <span
-              className={[
-                "font-heading text-lg font-semibold",
-                active ? "text-white" : "text-darinol-text",
-              ].join(" ")}
-            >
-              {view.title}
-            </span>
-            <span
-              className={[
-                "mt-1 block text-sm font-medium leading-relaxed",
-                active ? "text-white/80" : "text-darinol-muted",
-              ].join(" ")}
-            >
-              {view.hint}
-            </span>
+            {t.newsPage}
           </button>
-        );
-      })}
+        ) : null}
+        <button
+          type="button"
+          onClick={() => onChange("Buat Konten")}
+          className="orange-gradient moving-accent h-11 rounded-full px-5 text-sm font-semibold text-white transition hover:brightness-105"
+        >
+          {t.contentPage}
+        </button>
+      </div>
     </nav>
   );
 }
