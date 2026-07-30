@@ -5,6 +5,9 @@ const config: Config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    // Category colour classes live in lib/categories.ts; without this glob
+    // Tailwind purges them and every chip silently renders grey.
+    "./lib/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -13,6 +16,8 @@ const config: Config = {
           background: "var(--color-background)",
           surface: "var(--color-surface)",
           primary: "#FF7A45",
+          primaryFill: "var(--color-primary-fill)",
+          primaryInk: "var(--color-primary-ink)",
           text: "var(--color-text)",
           muted: "var(--color-muted)",
           border: "var(--color-border)",

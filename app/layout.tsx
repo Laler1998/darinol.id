@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://darinol-id.vercel.app";
@@ -6,10 +7,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://darinol-id.vercel.a
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Darinol.id - Dari Tren Jadi Konten",
+    default: "Darinol.id - Radar Tren dan Berita Terbaru",
     template: "%s | Darinol.id",
   },
-  description: "Dashboard tren kreator untuk menemukan topik viral dan mengubahnya menjadi ide konten.",
+  description:
+    "Pantau topik yang sedang naik dan baca berita terbaru dari puluhan sumber media dalam satu layar.",
   applicationName: "Darinol.id",
   manifest: "/site.webmanifest?v=6",
   icons: {
@@ -30,9 +32,9 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "Darinol.id - Dari Tren Jadi Konten",
+    title: "Darinol.id - Radar Tren dan Berita Terbaru",
     description:
-      "Dashboard tren kreator untuk menemukan topik viral dan mengubahnya menjadi ide konten.",
+      "Pantau topik yang sedang naik dan baca berita terbaru dari puluhan sumber media dalam satu layar.",
     url: siteUrl,
     siteName: "Darinol.id",
     images: [
@@ -48,9 +50,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Darinol.id - Dari Tren Jadi Konten",
+    title: "Darinol.id - Radar Tren dan Berita Terbaru",
     description:
-      "Dashboard tren kreator untuk menemukan topik viral dan mengubahnya menjadi ide konten.",
+      "Pantau topik yang sedang naik dan baca berita terbaru dari puluhan sumber media dalam satu layar.",
     images: ["/darinol-og.png"],
   },
 };
@@ -66,7 +68,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

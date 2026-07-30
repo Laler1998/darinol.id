@@ -1,15 +1,16 @@
 {
-  "name": "darinol-creator-trend-dashboard",
+  "name": "darinol-trend-news-radar",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:fresh": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.108.2",
+    "@vercel/analytics": "^2.0.1",
     "framer-motion": "^12.40.0",
     "next": "latest",
     "react": "latest",
