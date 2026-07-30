@@ -1,9 +1,15 @@
 {
-  "name": "Darinol.id",
+  "name": "Darinol.id - Radar Tren dan Berita Terbaru",
   "short_name": "Darinol",
-  "description": "Dari Tren Jadi Konten.",
+  "description": "Pantau topik yang sedang naik dan baca berita terbaru dari puluhan sumber media dalam satu layar.",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
+  "lang": "id-ID",
+  "dir": "ltr",
+  "categories": ["news", "magazines"],
   "background_color": "#F4F2EE",
   "theme_color": "#FF7A45",
   "icons": [
@@ -11,7 +17,13 @@
       "src": "/darinol-icon.png?v=6",
       "sizes": "1024x1024",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/darinol-icon.png?v=6",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/favicon.ico?v=6",

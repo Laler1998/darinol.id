@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchRssArticles } from "@/lib/rss";
 import { fetchCultureTrends, sampleCultureTrends, type RadarType } from "@/lib/culture-trends";
+import { growthLabel, scoreTopic } from "@/lib/scoring";
 import type { Topic, TopicArticle } from "@/lib/types";
 
 type NewsArticle = {
@@ -832,18 +833,13 @@ function buildTopics(articles: NewsArticle[]) {
     .map((group): Topic => {
       const articleCount = group.articles.length;
       const sourceCount = group.sources.size;
-      const ageHours = Math.max(0, (now - group.newest) / 36e5);
-      // Spread the score across the full band so the radar can actually rank topics:
-      // freshness decays over ~12 hours, volume and source diversity carry the rest.
-      const recencyScore = Math.max(0, 30 - ageHours * 2.5);
-      const volumeScore = Math.min(34, articleCount * 8.5);
-      const diversityScore = Math.min(24, sourceCount * 8);
-      const singleArticlePenalty = articleCount === 1 ? 18 : 0;
-      const score = Math.max(
-        35,
-        Math.min(99, Math.round(12 + recencyScore + volumeScore + diversityScore - singleArticlePenalty)),
-      );
-      const growth = `+${Math.min(380, 80 + articleCount * 45 + sourceCount * 25)}%`;
+      const score = scoreTopic({
+        articleCount,
+        sourceCount,
+        newestPublishedAt: group.newest,
+        now,
+      });
+      const growth = growthLabel({ articleCount, sourceCount });
 
       return {
         id: slugify(group.name),

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { ServiceWorker } from "@/components/service-worker";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://darinol-id.vercel.app";
@@ -61,6 +62,46 @@ export const viewport: Viewport = {
   themeColor: "#FF7A45",
 };
 
+/**
+ * Tells search engines this is a news aggregator rather than a generic page, so
+ * the radar and the feed can be understood as a curated collection.
+ */
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      url: siteUrl,
+      name: "Darinol.id",
+      description:
+        "Pantau topik yang sedang naik dan baca berita terbaru dari puluhan sumber media dalam satu layar.",
+      inLanguage: "id-ID",
+      publisher: { "@id": `${siteUrl}/#organization` },
+    },
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: "Darinol.id",
+      url: siteUrl,
+      logo: {
+        "@type": "ImageObject",
+        url: `${siteUrl}/darinol-icon.png`,
+      },
+    },
+    {
+      "@type": "CollectionPage",
+      "@id": `${siteUrl}/#collection`,
+      url: siteUrl,
+      name: "Radar Tren dan Berita Terbaru",
+      description:
+        "Topik yang sedang naik dan berita terbaru, dikumpulkan dari feed media dan sinyal publik.",
+      isPartOf: { "@id": `${siteUrl}/#website` },
+      inLanguage: "id-ID",
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -70,6 +111,12 @@ export default function RootLayout({
     <html lang="id">
       <body>
         {children}
+        <script
+          type="application/ld+json"
+          // Static, author-controlled object — no user input reaches this.
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <ServiceWorker />
         <Analytics />
       </body>
     </html>

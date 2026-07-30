@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "dev:fresh": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && next dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit --ignoreDeprecations 6.0",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -24,6 +27,7 @@
     "autoprefixer": "latest",
     "postcss": "latest",
     "tailwindcss": "^3.4.17",
-    "typescript": "latest"
+    "typescript": "latest",
+    "vitest": "^3.2.7"
   }
 }
