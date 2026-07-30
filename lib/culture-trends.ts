@@ -30,8 +30,6 @@ export type CultureTrend = {
   competition_score: number | null;
   opportunity_score: number | null;
   whyViral: string[];
-  ideas: string[];
-  titles: string[];
   articles: Array<{
     title: string;
     source: string;
@@ -156,7 +154,6 @@ function buildCultureTrend({
   cross_platform_score,
   competition_score = null,
   whyViral,
-  ideas,
   is_sample = false,
 }: {
   id: string;
@@ -171,7 +168,6 @@ function buildCultureTrend({
   cross_platform_score: number;
   competition_score?: number | null;
   whyViral: string[];
-  ideas: string[];
   is_sample?: boolean;
 }): CultureTrend {
   const scores = scoreCultureTrend({
@@ -200,12 +196,6 @@ function buildCultureTrend({
     competition_score,
     opportunity_score: scores.opportunity_score,
     whyViral,
-    ideas,
-    titles: [
-      name,
-      `Kenapa ${name} mulai ramai?`,
-      `Angle konten dari trend ${name}`,
-    ],
     articles: [
       {
         title: name,
@@ -281,19 +271,8 @@ export const sampleCultureTrends: CultureTrend[] = [
     competition_score: null,
     whyViral: [
       "Format ini naik karena relatable untuk pekerja muda dan mudah direplikasi.",
-      "Visual cafe, laptop, dan rutinitas kerja mudah dipakai untuk short video.",
-      "Bisa masuk ke angle freelancer, agency, fresh graduate, dan introvert.",
-    ],
-    ideas: [
-      "Versi anak agency",
-      "Versi freelancer",
-      "Versi fresh graduate",
-      "Versi introvert",
-    ],
-    titles: [
-      "POV Kerja Remote dari Cafe",
-      "Realita Kerja dari Cafe Seharian",
-      "Kerja Remote: Produktif atau Cuma Estetik?",
+      "Percakapan soal kerja remote konsisten muncul lintas platform.",
+      "Sinyal terdeteksi dari komunitas lifestyle dan produktivitas.",
     ],
     articles: [
       {
@@ -317,20 +296,9 @@ export const sampleCultureTrends: CultureTrend[] = [
     cross_platform_score: 14,
     competition_score: null,
     whyViral: [
-      "Format GRWM tetap kuat karena terasa personal dan mudah dibuat harian.",
-      "Angle budget cocok dengan audiens yang sensitif harga.",
-      "Bisa digabung dengan fashion, beauty, dan lifestyle creator.",
-    ],
-    ideas: [
-      "GRWM interview kerja",
-      "GRWM ke kantor tanpa mahal",
-      "GRWM first date low budget",
-      "GRWM creator pemula",
-    ],
-    titles: [
-      "GRWM Budget tapi Tetap Rapi",
-      "Tampil Proper Tanpa Keluar Banyak",
-      "Starter Pack GRWM Low Budget",
+      "Format GRWM tetap kuat karena terasa personal dan muncul harian.",
+      "Tema budget ramai dibahas audiens yang sensitif harga.",
+      "Sinyal terdeteksi dari komunitas beauty, fashion, dan lifestyle.",
     ],
     articles: [
       {
@@ -355,19 +323,8 @@ export const sampleCultureTrends: CultureTrend[] = [
     competition_score: null,
     whyViral: [
       "Relatable dengan pekerja muda dan mudah diparodikan.",
-      "Format meme finansial ringan sering dipakai lintas platform.",
-      "Bisa masuk ke konten edukasi keuangan atau humor kantor.",
-    ],
-    ideas: [
-      "Versi tanggal tua",
-      "Versi anak kos",
-      "Versi freelancer invoice telat",
-      "Versi agency banyak revisi",
-    ],
-    titles: [
-      "Gajian Masuk, Saldo Langsung Pergi",
-      "Meme Tanggal Tua yang Terlalu Nyata",
-      "Kenapa Gajian Terasa Cuma Lewat?",
+      "Format meme finansial ringan sering muncul lintas platform.",
+      "Sinyal terdeteksi dari monitoring meme publik.",
     ],
     articles: [
       {
@@ -450,13 +407,7 @@ export async function fetchRedditCultureTrends() {
             whyViral: [
               `Naik di komunitas r/${post.subreddit ?? subreddit}.`,
               `${score.toLocaleString("id-ID")} upvotes dan ${comments.toLocaleString("id-ID")} komentar terdeteksi dari Reddit.`,
-              "Cocok dipakai sebagai sinyal awal culture, meme, atau creator trend.",
-            ],
-            ideas: [
-              "Buat versi lokal Indonesia",
-              "Ubah jadi POV pendek",
-              "Ambil format diskusinya untuk carousel",
-              "Buat reaction atau explainer ringan",
+              "Sinyal awal untuk culture, meme, atau percakapan komunitas.",
             ],
           }),
         ];
@@ -513,13 +464,7 @@ export async function fetchYouTubeCultureTrends() {
         whyViral: [
           "Masuk daftar video populer YouTube Indonesia.",
           `${views.toLocaleString("id-ID")} views terdeteksi dari YouTube Data API.`,
-          "Bisa dipakai untuk membaca arah minat audiens dan format konten yang sedang naik.",
-        ],
-        ideas: [
-          "Buat hook dari judul video",
-          "Ubah jadi short video commentary",
-          "Ambil format storytelling-nya",
-          "Buat carousel insight untuk niche kamu",
+          "Menunjukkan arah minat audiens Indonesia hari ini.",
         ],
       }),
     ];

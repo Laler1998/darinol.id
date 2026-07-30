@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchRssArticles } from "@/lib/rss";
 import { fetchCultureTrends, sampleCultureTrends, type RadarType } from "@/lib/culture-trends";
+import type { Topic, TopicArticle } from "@/lib/types";
 
 type NewsArticle = {
   source?: { name?: string | null };
@@ -48,32 +49,6 @@ type YouTubeSearchPayload = {
   }>;
 };
 
-type Topic = {
-  id: string;
-  name: string;
-  category: string;
-  radar_type: RadarType;
-  culture_category?: string | null;
-  source?: string;
-  culture_score?: number;
-  opportunity_score?: number | null;
-  competition_score?: number | null;
-  is_sample?: boolean;
-  score: number;
-  growth: string;
-  whyViral: string[];
-  ideas: string[];
-  titles: string[];
-  articles: TopicArticle[];
-};
-
-type TopicArticle = {
-  title: string;
-  source: string;
-  url: string;
-  publishedAt: string | null;
-};
-
 const fallbackUpdatedAt = new Date().toISOString();
 
 function fallbackArticle(title: string, source: string, query: string): TopicArticle {
@@ -113,18 +88,7 @@ const fallbackTopics: Topic[] = [
     whyViral: [
       "Banyak pencarian terkait aksi dan kondisi terbaru hari ini.",
       "Topik peristiwa lokal cepat menyebar lewat potongan video pendek.",
-      "Creator butuh angle yang aman, jelas, dan tidak memicu misinformasi.",
-    ],
-    ideas: [
-      "Apa yang Perlu Diketahui dari Demo Hari Ini?",
-      "Kenapa Isu Demo Cepat Ramai di Media Sosial?",
-      "Cara Membaca Berita Demo Tanpa Ikut Panik",
-      "3 Hal yang Harus Dicek Sebelum Share Kabar Demo",
-    ],
-    titles: [
-      "Demo Hari Ini Ramai Dibahas, Ini Intinya",
-      "Kenapa Kabar Demo Cepat Viral?",
-      "Sebelum Share Berita Demo, Cek Ini Dulu",
+      "Media nasional memberi pembaruan berkala sepanjang hari.",
     ],
     articles: [
       fallbackArticle("Pantau kabar demo dan aksi terbaru hari ini", "Google News", "demo hari ini Indonesia"),
@@ -139,24 +103,13 @@ const fallbackTopics: Topic[] = [
     score: 96,
     growth: "+310%",
     whyViral: [
-      "Tools AI video makin sering dipakai creator untuk produksi cepat.",
-      "Perubahan fitur baru biasanya memicu banyak tutorial dan eksperimen.",
-      "Audiens penasaran cara membuat video yang terlihat profesional.",
-    ],
-    ideas: [
-      "AI Video Bisa Bikin Konten Lebih Cepat?",
-      "Tools AI Video yang Lagi Sering Dibahas",
-      "Cara Pakai AI Video Tanpa Terlihat Template",
-      "Apa Risiko Konten AI Video untuk Creator?",
-    ],
-    titles: [
-      "AI Video Makin Ramai, Creator Harus Tahu Ini",
-      "Kenapa Semua Orang Mulai Coba AI Video?",
-      "AI Video: Bantu Creator atau Bikin Konten Makin Sama?",
+      "Tools AI video makin sering dibahas media teknologi.",
+      "Perubahan fitur baru biasanya memicu banyak liputan lanjutan.",
+      "Topik ini muncul lintas media global dan lokal.",
     ],
     articles: [
       fallbackArticle("Update teknologi AI video terbaru", "Google News", "AI video terbaru"),
-      fallbackArticle("Kabar startup dan tools AI untuk creator", "Google News", "AI tools creator video"),
+      fallbackArticle("Kabar startup dan tools AI terbaru", "Google News", "AI tools startup terbaru"),
     ],
   },
   {
@@ -169,18 +122,7 @@ const fallbackTopics: Topic[] = [
     whyViral: [
       "Pergerakan kurs cepat memengaruhi percakapan bisnis dan belanja harian.",
       "Media ekonomi rutin mengangkat dampaknya ke pasar dan masyarakat.",
-      "Topik finansial mudah dibuat menjadi konten edukasi singkat.",
-    ],
-    ideas: [
-      "Kenapa Rupiah Bisa Menguat atau Melemah?",
-      "Dampak Kurs Rupiah ke Harga Barang",
-      "Cara Membaca Kabar Rupiah untuk Pemula",
-      "Apa Hubungan Rupiah, BI, dan The Fed?",
-    ],
-    titles: [
-      "Rupiah Bergerak Lagi, Apa Penyebabnya?",
-      "Kurs Rupiah Hari Ini: Kenapa Penting?",
-      "Yang Perlu Dipahami dari Kabar Rupiah",
+      "Data pasar diperbarui beberapa kali dalam satu hari.",
     ],
     articles: [
       fallbackArticle("Kabar rupiah dan ekonomi hari ini", "Google News", "rupiah ekonomi hari ini"),
@@ -197,18 +139,7 @@ const fallbackTopics: Topic[] = [
     whyViral: [
       "Topik sepak bola nasional punya basis percakapan yang besar.",
       "Update pemain, jadwal, dan hasil pertandingan cepat dibahas ulang.",
-      "Konten reaksi dan analisis ringan mudah mendapatkan engagement.",
-    ],
-    ideas: [
-      "Apa yang Bikin Timnas Indonesia Ramai Lagi?",
-      "3 Poin Penting dari Kabar Timnas Terbaru",
-      "Kenapa Fans Optimis dengan Timnas?",
-      "Prediksi Angle Konten Timnas yang Aman Dibuat",
-    ],
-    titles: [
-      "Timnas Indonesia Jadi Sorotan Lagi",
-      "Kabar Timnas Terbaru yang Perlu Kamu Tahu",
-      "Kenapa Timnas Indonesia Ramai Dibahas?",
+      "Banyak media olahraga memberi liputan paralel.",
     ],
     articles: [
       fallbackArticle("Berita Timnas Indonesia terbaru", "Google News", "Timnas Indonesia terbaru"),
@@ -224,19 +155,8 @@ const fallbackTopics: Topic[] = [
     growth: "+320%",
     whyViral: [
       "Pencarian meningkat dalam 48 jam terakhir.",
-      "Banyak media nasional membahas topik ini.",
-      "Percakapan sosial media meningkat.",
-    ],
-    ideas: [
-      "Kenapa Bitcoin Naik Lagi?",
-      "Apa yang Membuat Bitcoin Ramai Dibahas?",
-      "Fakta Bitcoin yang Jarang Diketahui",
-      "Apakah Bitcoin Masih Menarik?",
-    ],
-    titles: [
-      "Bitcoin Naik Lagi, Apa Penyebabnya?",
-      "Kenapa Bitcoin Mendadak Ramai?",
-      "Yang Sedang Terjadi Dengan Bitcoin",
+      "Banyak media nasional dan global membahas topik ini.",
+      "Pergerakan harga memicu liputan berkelanjutan.",
     ],
     articles: [
       fallbackArticle("Kabar Bitcoin dan pasar crypto terbaru", "Google News", "Bitcoin crypto terbaru"),
@@ -253,18 +173,7 @@ const fallbackTopics: Topic[] = [
     whyViral: [
       "Kebijakan pemerintah sering menjadi bahan diskusi publik.",
       "Media nasional mengangkat respons dari berbagai pihak.",
-      "Creator perlu merangkum isu politik dengan bahasa netral.",
-    ],
-    ideas: [
-      "Apa Inti Kabar Politik Terbaru Hari Ini?",
-      "Cara Menjelaskan Isu Pemerintah Tanpa Bias",
-      "Kenapa Kebijakan Ini Ramai Dibahas?",
-      "3 Sudut Pandang dari Kabar Politik Terbaru",
-    ],
-    titles: [
-      "Kabar Politik Hari Ini, Ini Ringkasannya",
-      "Isu Pemerintah yang Sedang Ramai Dibahas",
-      "Kenapa Topik Politik Ini Jadi Sorotan?",
+      "Agenda resmi diberitakan hampir setiap hari.",
     ],
     articles: [
       fallbackArticle("Berita politik nasional terbaru", "Google News", "politik nasional terbaru Prabowo"),
@@ -279,20 +188,9 @@ const fallbackTopics: Topic[] = [
     score: 84,
     growth: "+160%",
     whyViral: [
-      "Produk dan algoritma Google berdampak langsung ke creator dan bisnis.",
+      "Produk dan algoritma Google berdampak langsung ke bisnis digital.",
       "Update teknologi besar biasanya cepat dibahas media global.",
-      "Banyak angle konten edukasi yang bisa dibuat dari satu perubahan fitur.",
-    ],
-    ideas: [
-      "Update Google yang Harus Creator Tahu",
-      "Apa Dampak Perubahan Google ke Konten?",
-      "Kenapa Google Sering Jadi Topik Viral?",
-      "Cara Mengikuti Update Teknologi Tanpa Bingung",
-    ],
-    titles: [
-      "Google Update Lagi, Creator Perlu Tahu Ini",
-      "Kabar Google Terbaru dan Dampaknya",
-      "Kenapa Update Google Selalu Ramai?",
+      "Satu perubahan fitur memicu banyak berita turunan.",
     ],
     articles: [
       fallbackArticle("Update Google dan teknologi terbaru", "Google News", "Google technology update"),
@@ -308,19 +206,8 @@ const fallbackTopics: Topic[] = [
     growth: "+140%",
     whyViral: [
       "Rilis film, trailer, dan respons penonton cepat menjadi percakapan.",
-      "Topik hiburan cocok untuk format review singkat dan rekomendasi.",
-      "Creator bisa mengambil angle fakta, opini, atau reaksi audiens.",
-    ],
-    ideas: [
-      "Film Indonesia yang Lagi Dibahas Minggu Ini",
-      "Kenapa Film Ini Ramai di Media Sosial?",
-      "Fakta Menarik dari Film Indonesia Terbaru",
-      "Apakah Film Ini Layak Ditonton?",
-    ],
-    titles: [
-      "Film Indonesia Ini Lagi Ramai Dibahas",
-      "Kenapa Film Ini Jadi Sorotan?",
-      "Fakta Singkat Film Indonesia Terbaru",
+      "Media hiburan memberi liputan review dan box office.",
+      "Topik ini konsisten muncul di feed harian.",
     ],
     articles: [
       fallbackArticle("Berita film Indonesia terbaru", "Google News", "film Indonesia terbaru"),
@@ -337,18 +224,7 @@ const fallbackTopics: Topic[] = [
     whyViral: [
       "Isu global sering menjadi percakapan lintas negara.",
       "Media internasional dan nasional memberi pembaruan berkala.",
-      "Konten perlu hati-hati, faktual, dan tidak menyederhanakan konflik.",
-    ],
-    ideas: [
-      "Ringkasan Isu Global Hari Ini",
-      "Apa yang Perlu Dipahami dari Kabar Gaza?",
-      "Cara Membahas Isu Global dengan Empati",
-      "3 Hal yang Harus Dicek dari Berita Konflik",
-    ],
-    titles: [
-      "Kabar Global Hari Ini, Ini Ringkasannya",
-      "Yang Perlu Dipahami dari Isu Gaza",
-      "Sebelum Share Kabar Global, Cek Ini Dulu",
+      "Perkembangan situasi berubah dalam hitungan jam.",
     ],
     articles: [
       fallbackArticle("Berita global terbaru hari ini", "Google News", "Gaza global news today"),
@@ -956,14 +832,16 @@ function buildTopics(articles: NewsArticle[]) {
     .map((group): Topic => {
       const articleCount = group.articles.length;
       const sourceCount = group.sources.size;
-      const ageHours = Math.max(1, (now - group.newest) / 36e5);
-      const recencyScore = Math.max(0, 35 - ageHours);
-      const volumeScore = Math.min(30, articleCount * 10);
-      const diversityScore = Math.min(20, sourceCount * 7);
-      const singleArticlePenalty = articleCount === 1 ? 24 : 0;
+      const ageHours = Math.max(0, (now - group.newest) / 36e5);
+      // Spread the score across the full band so the radar can actually rank topics:
+      // freshness decays over ~12 hours, volume and source diversity carry the rest.
+      const recencyScore = Math.max(0, 30 - ageHours * 2.5);
+      const volumeScore = Math.min(34, articleCount * 8.5);
+      const diversityScore = Math.min(24, sourceCount * 8);
+      const singleArticlePenalty = articleCount === 1 ? 18 : 0;
       const score = Math.max(
-        70,
-        Math.min(99, Math.round(45 + recencyScore + volumeScore + diversityScore - singleArticlePenalty)),
+        35,
+        Math.min(99, Math.round(12 + recencyScore + volumeScore + diversityScore - singleArticlePenalty)),
       );
       const growth = `+${Math.min(380, 80 + articleCount * 45 + sourceCount * 25)}%`;
 
@@ -974,23 +852,14 @@ function buildTopics(articles: NewsArticle[]) {
         radar_type: "news",
         score,
         growth,
+        total_articles: articleCount,
+        total_sources: sourceCount,
         whyViral: [
           `Terdeteksi dari ${articleCount} artikel terbaru.`,
           `Dibahas oleh ${sourceCount} sumber berita berbeda.`,
           `Topik muncul dalam berita yang dipublikasikan beberapa jam terakhir.`,
         ],
-        ideas: [
-          `Kenapa ${group.name} ramai dibahas?`,
-          `Apa yang membuat ${group.name} menarik hari ini?`,
-          `Fakta ${group.name} yang perlu diketahui kreator`,
-          `Apakah ${group.name} masih relevan untuk dibahas?`,
-        ],
-        titles: [
-          `${group.name} Lagi Ramai, Apa Penyebabnya?`,
-          `Kenapa ${group.name} Mendadak Dibahas?`,
-          `Yang Sedang Terjadi Dengan ${group.name}`,
-        ],
-        articles: group.articles.slice(0, 5).map((article) => ({
+        articles: group.articles.slice(0, 8).map((article) => ({
           title: article.title ?? group.name,
           source: article.source?.name ?? "News",
           url: article.url ?? "#",
