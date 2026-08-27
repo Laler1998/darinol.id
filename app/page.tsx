@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { LatestFeed } from "@/components/latest-feed";
 import { TopicDetail } from "@/components/topic-detail";
 import { TopicList } from "@/components/topic-list";
+import { TrendAgent } from "@/components/trend-agent";
 import { AlertIcon, RefreshIcon } from "@/components/icons";
 import {
   type Language,
@@ -310,6 +311,7 @@ export default function Page() {
           <LatestFeed articles={latestFeed} loading={loading} language={language} t={t} />
         )}
       </main>
+      <TrendAgent topics={filteredTopics} language={language} />
     </div>
   );
 }
