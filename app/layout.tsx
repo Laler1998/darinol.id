@@ -3,7 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { ServiceWorker } from "@/components/service-worker";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://darinol-id.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://darinol.online";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -13,6 +13,27 @@ export const metadata: Metadata = {
   },
   description:
     "Pantau topik yang sedang naik dan baca berita terbaru dari puluhan sumber media dalam satu layar.",
+  keywords: [
+    "trend radar",
+    "berita terbaru",
+    "tren Indonesia",
+    "berita global",
+    "social trends",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   applicationName: "Darinol.id",
   manifest: "/site.webmanifest?v=6",
   icons: {
@@ -40,9 +61,9 @@ export const metadata: Metadata = {
     siteName: "Darinol.id",
     images: [
       {
-        url: "/darinol-icon.png",
-        width: 1024,
-        height: 1536,
+        url: "/darinol-og.png",
+        width: 1200,
+        height: 630,
         alt: "Darinol.id",
       },
     ],

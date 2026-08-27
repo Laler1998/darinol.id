@@ -14,6 +14,8 @@ export async function GET() {
     sources: cultureTrendSources,
     youtube_count: payload.youtube_count,
     reddit_count: payload.reddit_count,
+    bluesky_count: payload.bluesky_count,
+    hacker_news_count: payload.hacker_news_count,
     topics: payload.topics,
   }, {
     headers: {

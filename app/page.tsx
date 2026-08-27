@@ -176,8 +176,26 @@ export default function Page() {
 
   const selectedTopic =
     filteredTopics.find((topic) => topic.id === selectedId) ?? filteredTopics[0] ?? null;
-  const categoryFilters =
-    activeRadar === "culture" ? cultureCategoryFilters : newsCategoryFilters;
+  const categoryFilters = useMemo(() => {
+    if (activeRadar !== "culture") return newsCategoryFilters;
+
+    const availableCategories = new Set(
+      topics
+        .filter((topic) => topic.radar_type === "culture" && topic.culture_category)
+        .map((topic) => topic.culture_category as string),
+    );
+
+    return [
+      cultureCategoryFilters[0],
+      ...cultureCategoryFilters.slice(1).filter((category) => availableCategories.has(category)),
+    ];
+  }, [activeRadar, topics]);
+
+  useEffect(() => {
+    if (!categoryFilters.includes(activeCategory)) {
+      setActiveCategory("Semua");
+    }
+  }, [activeCategory, categoryFilters]);
 
   function handleSelectRadar(radar: RadarFilter) {
     setActiveRadar(radar);
@@ -247,6 +265,16 @@ export default function Page() {
           </button>
         </div>
       ) : null}
+
+      <header className="mb-5 max-w-3xl">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-darinol-text sm:text-3xl">
+          Darinol.id: Radar Tren dan Berita Terbaru
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-darinol-muted sm:text-base">
+          Pantau topik yang sedang naik dari berita Indonesia, sumber global, YouTube,
+          Reddit, dan komunitas teknologi dalam satu radar.
+        </p>
+      </header>
 
       <main id="main">
         {activeView === "radar" ? (

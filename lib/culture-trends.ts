@@ -74,6 +74,32 @@ type YouTubeVideosPayload = {
   }>;
 };
 
+type BlueskySearchPayload = {
+  posts?: Array<{
+    uri?: string;
+    record?: {
+      text?: string;
+      createdAt?: string;
+    };
+    author?: {
+      handle?: string;
+      displayName?: string;
+    };
+    likeCount?: number;
+    repostCount?: number;
+    replyCount?: number;
+  }>;
+};
+
+type HackerNewsItem = {
+  id: number;
+  title?: string;
+  url?: string;
+  time?: number;
+  score?: number;
+  descendants?: number;
+};
+
 export function scoreCultureTrend({
   frequency_score,
   recency_score,
@@ -223,18 +249,43 @@ function sampleCultureTrend(
   };
 }
 
+const defaultYouTubeRegions = ["ID", "US", "GB", "JP"] as const;
+
+function parseYouTubeRegions(value = process.env.YOUTUBE_REGION_CODES) {
+  const configured = (value ?? defaultYouTubeRegions.join(","))
+    .split(",")
+    .map((region) => region.trim().toUpperCase())
+    .filter((region) => /^[A-Z]{2}$/.test(region));
+
+  return Array.from(new Set(configured)).slice(0, 10);
+}
+
+export const youtubeRegionCodes = parseYouTubeRegions();
+
 export const cultureTrendSources = [
   {
     id: "youtube",
     name: "YouTube Data API",
     status: process.env.YOUTUBE_API_KEY ? "ready" : "needs_api_key",
-    note: "Prepared for most popular videos by category and region.",
+    note: `Most popular videos for configured regions: ${youtubeRegionCodes.join(", ")}.`,
   },
   {
     id: "reddit",
     name: "Reddit public JSON feeds",
     status: "prepared",
     note: "Prepared for hot/top posts from selected subreddits.",
+  },
+  {
+    id: "bluesky",
+    name: "Bluesky public API",
+    status: "prepared",
+    note: "Public posts searched by configurable keywords; no API key required.",
+  },
+  {
+    id: "hacker-news",
+    name: "Hacker News",
+    status: "prepared",
+    note: "Public technology and startup discussions from the official Firebase API.",
   },
   {
     id: "pinterest",
@@ -421,21 +472,22 @@ export async function fetchRedditCultureTrends() {
     .slice(0, 18);
 }
 
-export async function fetchYouTubeCultureTrends() {
+export async function fetchYouTubeCultureTrends(regions = youtubeRegionCodes) {
   const apiKey = process.env.YOUTUBE_API_KEY;
 
   if (!apiKey) return [];
 
-  const url = new URL("https://www.googleapis.com/youtube/v3/videos");
-  url.searchParams.set("part", "snippet,statistics");
-  url.searchParams.set("chart", "mostPopular");
-  url.searchParams.set("regionCode", "ID");
-  url.searchParams.set("maxResults", "20");
-  url.searchParams.set("key", apiKey);
+  const regionResults = await Promise.allSettled(regions.map(async (region) => {
+    const url = new URL("https://www.googleapis.com/youtube/v3/videos");
+    url.searchParams.set("part", "snippet,statistics");
+    url.searchParams.set("chart", "mostPopular");
+    url.searchParams.set("regionCode", region);
+    url.searchParams.set("maxResults", "20");
+    url.searchParams.set("key", apiKey);
 
-  const payload = await fetchJson<YouTubeVideosPayload>(url.toString());
+    const payload = await fetchJson<YouTubeVideosPayload>(url.toString());
 
-  return (payload.items ?? []).flatMap((item) => {
+    return (payload.items ?? []).flatMap((item) => {
     if (!item.id || !item.snippet?.title) return [];
 
     const views = Number(item.statistics?.viewCount ?? 0);
@@ -449,12 +501,12 @@ export async function fetchYouTubeCultureTrends() {
 
     return [
       buildCultureTrend({
-        id: `youtube-${item.id}`,
+        id: `youtube-${region.toLowerCase()}-${item.id}`,
         name: item.snippet.title,
         culture_category,
         source: item.snippet.channelTitle
-          ? `YouTube - ${item.snippet.channelTitle}`
-          : "YouTube",
+          ? `YouTube ${region} - ${item.snippet.channelTitle}`
+          : `YouTube ${region}`,
         sourceUrl: `https://www.youtube.com/watch?v=${item.id}`,
         publishedAt: item.snippet.publishedAt ?? null,
         frequency_score,
@@ -462,9 +514,128 @@ export async function fetchYouTubeCultureTrends() {
         engagement_score,
         cross_platform_score: 6,
         whyViral: [
-          "Masuk daftar video populer YouTube Indonesia.",
+          `Masuk daftar video populer YouTube untuk region ${region}.`,
           `${views.toLocaleString("id-ID")} views terdeteksi dari YouTube Data API.`,
-          "Menunjukkan arah minat audiens Indonesia hari ini.",
+          `Menunjukkan arah minat audiens ${region} hari ini.`,
+        ],
+      }),
+    ];
+    });
+  }));
+
+  return regionResults
+    .flatMap((result) => (result.status === "fulfilled" ? result.value : []));
+}
+
+const blueskyQueries = [
+  "viral",
+  "AI",
+  "music",
+  "gaming",
+  "fashion",
+] as const;
+
+function blueskyPostUrl(uri: string) {
+  const parts = uri.split("/");
+  const handle = parts[2];
+  const postId = parts[4];
+  return handle && postId
+    ? `https://bsky.app/profile/${handle}/post/${postId}`
+    : "https://bsky.app";
+}
+
+export async function fetchBlueskyCultureTrends() {
+  const settled = await Promise.allSettled(
+    blueskyQueries.map(async (query) => {
+      const url = new URL("https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts");
+      url.searchParams.set("q", query);
+      url.searchParams.set("limit", "10");
+
+      const payload = await fetchJson<BlueskySearchPayload>(url.toString());
+
+      return (payload.posts ?? []).flatMap((post) => {
+        const text = post.record?.text?.trim();
+        if (!post.uri || !text || text.length < 8) return [];
+
+        const likes = post.likeCount ?? 0;
+        const reposts = post.repostCount ?? 0;
+        const replies = post.replyCount ?? 0;
+        const engagementBase = likes + reposts * 2 + replies * 3;
+        const culture_category = inferRedditCategory("bluesky", text);
+
+        return [
+          buildCultureTrend({
+            id: `bluesky-${post.uri.split("/").pop()}`,
+            name: text.slice(0, 120),
+            culture_category,
+            source: post.author?.displayName
+              ? `Bluesky - ${post.author.displayName}`
+              : post.author?.handle
+                ? `Bluesky - @${post.author.handle}`
+                : "Bluesky",
+            sourceUrl: blueskyPostUrl(post.uri),
+            publishedAt: post.record?.createdAt ?? null,
+            frequency_score: clampScore(10 + Math.log10(Math.max(1, engagementBase))),
+            recency_score: clampScore(22),
+            engagement_score: clampScore(8 + Math.log10(Math.max(1, engagementBase)) * 5),
+            cross_platform_score: 4,
+            whyViral: [
+              `Post publik Bluesky terdeteksi dari pencarian "${query}".`,
+              `${engagementBase.toLocaleString("id-ID")} total interaksi terukur dari like, repost, dan balasan.`,
+              "Sinyal sosial awal untuk dibandingkan dengan YouTube dan Reddit.",
+            ],
+          }),
+        ];
+      });
+    }),
+  );
+
+  return settled
+    .flatMap((result) => (result.status === "fulfilled" ? result.value : []))
+    .sort((a, b) => b.culture_score - a.culture_score)
+    .slice(0, 18);
+}
+
+export async function fetchHackerNewsCultureTrends() {
+  const ids = await fetchJson<number[]>(
+    "https://hacker-news.firebaseio.com/v0/topstories.json",
+    7000,
+  );
+  const settled = await Promise.allSettled(
+    ids.slice(0, 24).map((id) =>
+      fetchJson<HackerNewsItem>(
+        `https://hacker-news.firebaseio.com/v0/item/${id}.json`,
+        5000,
+      ),
+    ),
+  );
+
+  return settled.flatMap((result) => {
+    if (result.status !== "fulfilled" || !result.value.title) return [];
+
+    const item = result.value;
+    const title = item.title;
+    if (!title) return [];
+    const score = item.score ?? 0;
+    const comments = item.descendants ?? 0;
+    const engagementBase = score + comments * 3;
+
+    return [
+      buildCultureTrend({
+        id: `hacker-news-${item.id}`,
+        name: title,
+        culture_category: "creator_trend",
+        source: "Hacker News - Tech Community",
+        sourceUrl: item.url ?? `https://news.ycombinator.com/item?id=${item.id}`,
+        publishedAt: item.time ? new Date(item.time * 1000).toISOString() : null,
+        frequency_score: clampScore(12 + Math.log10(Math.max(1, score))),
+        recency_score: clampScore(22),
+        engagement_score: clampScore(8 + Math.log10(Math.max(1, engagementBase)) * 5),
+        cross_platform_score: 4,
+        whyViral: [
+          "Masuk daftar diskusi populer Hacker News.",
+          `${score.toLocaleString("id-ID")} points dan ${comments.toLocaleString("id-ID")} komentar terdeteksi.`,
+          "Menunjukkan percakapan aktif di komunitas teknologi dan startup.",
         ],
       }),
     ];
@@ -472,20 +643,26 @@ export async function fetchYouTubeCultureTrends() {
 }
 
 export async function fetchCultureTrends() {
-  const [youtubeResult, redditResult] = await Promise.allSettled([
+  const [youtubeResult, redditResult, blueskyResult, hackerNewsResult] = await Promise.allSettled([
     fetchYouTubeCultureTrends(),
     fetchRedditCultureTrends(),
+    fetchBlueskyCultureTrends(),
+    fetchHackerNewsCultureTrends(),
   ]);
   const youtube = youtubeResult.status === "fulfilled" ? youtubeResult.value : [];
   const reddit = redditResult.status === "fulfilled" ? redditResult.value : [];
-  const liveTopics = [...youtube, ...reddit]
+  const bluesky = blueskyResult.status === "fulfilled" ? blueskyResult.value : [];
+  const hackerNews = hackerNewsResult.status === "fulfilled" ? hackerNewsResult.value : [];
+  const liveTopics = [...youtube, ...reddit, ...bluesky, ...hackerNews]
     .sort((a, b) => b.culture_score - a.culture_score)
     .slice(0, 24);
 
   return {
-    source: liveTopics.length ? "youtube+reddit" : "sample-culture-placeholder",
+    source: liveTopics.length ? "youtube+reddit+bluesky+hacker-news" : "sample-culture-placeholder",
     youtube_count: youtube.length,
     reddit_count: reddit.length,
+    bluesky_count: bluesky.length,
+    hacker_news_count: hackerNews.length,
     topics: liveTopics.length ? liveTopics : sampleCultureTrends,
   };
 }
