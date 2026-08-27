@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchRssArticles } from "@/lib/rss";
+import { articleSlug, fetchRssArticles, isRssSource } from "@/lib/rss";
 import { fetchCultureTrends, sampleCultureTrends, type RadarType } from "@/lib/culture-trends";
 import { growthLabel, scoreTopic } from "@/lib/scoring";
 import type { Topic, TopicArticle } from "@/lib/types";
@@ -890,6 +890,10 @@ function buildTopics(articles: NewsArticle[]) {
           source: article.source?.name ?? "News",
           url: article.url ?? "#",
           publishedAt: article.publishedAt ?? null,
+          description: article.description ?? null,
+          slug: article.title && article.source?.name && isRssSource(article.source.name)
+            ? articleSlug(article.title, article.source.name)
+            : undefined,
         })),
       };
     })

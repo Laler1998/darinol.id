@@ -150,6 +150,21 @@ const rssSources = [
   },
 ];
 
+const rssSourceNames = new Set(rssSources.map((source) => source.name));
+
+export function isRssSource(source: string) {
+  return rssSourceNames.has(source);
+}
+
+export function articleSlug(title: string, source: string) {
+  return `${title}-${source}`
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 120);
+}
+
 export async function fetchRssArticles() {
   const settledFeeds = await Promise.allSettled(
     rssSources.map(async (source) => {
@@ -174,4 +189,15 @@ export async function fetchRssArticles() {
   return settledFeeds.flatMap((result) =>
     result.status === "fulfilled" ? result.value : [],
   );
+}
+
+export async function findRssArticle(slug: string) {
+  const articles = await fetchRssArticles();
+
+  return articles.find(
+    (article) =>
+      article.title &&
+      article.source.name &&
+      articleSlug(article.title, article.source.name) === slug,
+  ) ?? null;
 }
