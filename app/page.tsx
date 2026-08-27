@@ -17,7 +17,7 @@ import {
 import { buildLatestFeed, formatClock } from "@/lib/format";
 import type { RadarFilter, Topic, TrendsPayload } from "@/lib/types";
 
-const CACHE_PREFIX = "darinol-trends-cache-v3";
+const CACHE_PREFIX = "darinol-trends-cache-v4";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 type CachedPayload = TrendsPayload & { cachedAt?: number };

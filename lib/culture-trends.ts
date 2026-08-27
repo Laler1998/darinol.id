@@ -11,7 +11,8 @@ export type CultureCategory =
   | "film"
   | "internet_slang"
   | "entertainment"
-  | "creator_trend";
+  | "creator_trend"
+  | "tech_community";
 
 export type CultureTrend = {
   id: string;
@@ -624,7 +625,7 @@ export async function fetchHackerNewsCultureTrends() {
       buildCultureTrend({
         id: `hacker-news-${item.id}`,
         name: title,
-        culture_category: "creator_trend",
+        culture_category: "tech_community",
         source: "Hacker News - Tech Community",
         sourceUrl: item.url ?? `https://news.ycombinator.com/item?id=${item.id}`,
         publishedAt: item.time ? new Date(item.time * 1000).toISOString() : null,
@@ -653,9 +654,12 @@ export async function fetchCultureTrends() {
   const reddit = redditResult.status === "fulfilled" ? redditResult.value : [];
   const bluesky = blueskyResult.status === "fulfilled" ? blueskyResult.value : [];
   const hackerNews = hackerNewsResult.status === "fulfilled" ? hackerNewsResult.value : [];
-  const liveTopics = [...youtube, ...reddit, ...bluesky, ...hackerNews]
-    .sort((a, b) => b.culture_score - a.culture_score)
-    .slice(0, 24);
+  const liveTopics = [
+    ...youtube.slice(0, 16),
+    ...hackerNews.slice(0, 4),
+    ...reddit.slice(0, 2),
+    ...bluesky.slice(0, 2),
+  ].sort((a, b) => b.culture_score - a.culture_score);
 
   return {
     source: liveTopics.length ? "youtube+reddit+bluesky+hacker-news" : "sample-culture-placeholder",

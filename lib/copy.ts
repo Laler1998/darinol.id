@@ -122,4 +122,5 @@ export const cultureCategoryFilters = [
   "internet_slang",
   "entertainment",
   "creator_trend",
+  "tech_community",
 ];
