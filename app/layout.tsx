@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ServiceWorker } from "@/components/service-worker";
 import "./globals.css";
 
@@ -139,6 +140,7 @@ export default function RootLayout({
         />
         <ServiceWorker />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
