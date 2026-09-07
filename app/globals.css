@@ -222,7 +222,7 @@ button {
 }
 
 .loading-video-light {
-  mix-blend-mode: multiply;
+  mix-blend-mode: darken;
 }
 
 .loading-fallback {
