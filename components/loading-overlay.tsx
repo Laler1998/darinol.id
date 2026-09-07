@@ -7,10 +7,27 @@ const MINIMUM_DISPLAY_MS = 4200;
 
 export function LoadingOverlay({ active }: { active: boolean }) {
   const [visible, setVisible] = useState(active);
+  const [isDark, setIsDark] = useState(true);
   const [fallback, setFallback] = useState(false);
   const [animationEnded, setAnimationEnded] = useState(false);
   const [minimumElapsed, setMinimumElapsed] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const updateTheme = () => setIsDark(document.documentElement.classList.contains("dark"));
+    const observer = new MutationObserver(updateTheme);
+
+    updateTheme();
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!videoRef.current || fallback) return;
+
+    videoRef.current.load();
+    void videoRef.current.play().catch(() => setFallback(true));
+  }, [isDark, fallback]);
 
   useEffect(() => {
     if (active) {
@@ -58,15 +75,23 @@ export function LoadingOverlay({ active }: { active: boolean }) {
         ) : (
           <video
             ref={videoRef}
-            className="loading-video"
+            className={`loading-video ${isDark ? "loading-video-dark" : "loading-video-light"}`}
             autoPlay
             loop={false}
             muted
             playsInline
             preload="auto"
+            onLoadedData={() => {
+              void videoRef.current?.play().catch(() => setFallback(true));
+            }}
             onError={() => {
               setFallback(true);
               if (!active) setAnimationEnded(true);
+            }}
+            onPause={() => {
+              if (active && videoRef.current) {
+                void videoRef.current.play().catch(() => setFallback(true));
+              }
             }}
             onEnded={() => {
               if (active && videoRef.current) {
@@ -79,7 +104,7 @@ export function LoadingOverlay({ active }: { active: boolean }) {
             }}
             aria-label="Animasi logo Darinol"
           >
-            <source src="/darinol-loading.mp4" type="video/mp4" />
+            <source src={isDark ? "/darinol-loading.mp4" : "/darinol-loading-light.mp4"} type="video/mp4" />
           </video>
         )}
       </div>
