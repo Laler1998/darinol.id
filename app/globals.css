@@ -1,37 +1,43 @@
-@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Premium intelligence-briefing palette. Ink Navy/Slate Panel are the primary
+ * surface family; brand orange (#FF7A45) stays reserved for accents so it
+ * reads as a signal rather than competing with its own background.
+ */
 :root {
-  --background: #f4f2ee;
-  --foreground: #1a1a1a;
-  --color-background: #f4f2ee;
+  --background: #eef2f5;
+  --foreground: #101820;
+  --color-background: #eef2f5;
   --color-surface: #ffffff;
-  --color-text: #1a1a1a;
-  /* Was #6b7280, which only reached 4.32:1 on the cream background. */
-  --color-muted: #646b78;
-  --color-border: #e7e2da;
+  --color-surface-raised: #e4e9ed;
+  --color-text: #101820;
+  --color-muted: #56636e;
+  --color-border: #d7dee3;
   /*
    * Brand orange (#FF7A45) is a fill/accent colour only: white text on it is
-   * 2.59:1 and it is 2.31:1 as text on cream. These two deeper tokens carry
-   * anything that has to be legible.
+   * 2.59:1 and it is low-contrast directly on light surfaces. These two
+   * deeper tokens carry anything that has to be legible.
    */
   --color-primary-fill: #b8431c; /* white text on this = 5.44:1 */
   --color-primary-ink: #b8431c; /* orange text/icons on light surfaces */
-  --font-poppins: "Poppins";
-  --font-be-vietnam: "Be Vietnam Pro";
+  --font-display: "Space Grotesk";
+  --font-text: "DM Sans";
 }
 
 .dark {
-  --background: #141312;
-  --foreground: #f7f3ee;
-  --color-background: #141312;
-  --color-surface: #1f1d1a;
-  --color-text: #f7f3ee;
-  --color-muted: #a8a29a;
-  --color-border: #39342e;
+  --background: #101820;
+  --foreground: #e8eef2;
+  --color-background: #101820;
+  --color-surface: #18232d;
+  --color-surface-raised: #22313d;
+  --color-text: #e8eef2;
+  --color-muted: #94a5b3;
+  --color-border: #2a3844;
   --color-primary-ink: #ffb694; /* 9.9:1 on the dark surface */
 }
 
@@ -52,7 +58,7 @@ body {
     linear-gradient(180deg, #f8f6f1 0%, #f1eee7 52%, #f6f2ec 100%),
     var(--background);
   color: var(--foreground);
-  font-family: var(--font-be-vietnam), "Be Vietnam Pro", system-ui, sans-serif;
+  font-family: var(--font-text), "DM Sans", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   position: relative;
 }

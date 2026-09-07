@@ -132,6 +132,14 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body>
+        <script
+          // Applies the stored (or default dark) theme before first paint so
+          // the new dark-first design doesn't flash light on every load.
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var m=localStorage.getItem('darinol-theme');document.documentElement.classList.toggle('dark', m !== 'light');}catch(e){document.documentElement.classList.add('dark');}",
+          }}
+        />
         {children}
         <script
           type="application/ld+json"

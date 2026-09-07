@@ -27,7 +27,8 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [activeView, setActiveView] = useState<MainView>("radar");
   const [language, setLanguage] = useState<Language>("id");
-  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+  // Dark is the intended premium default; a stored preference still wins.
+  const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
   const [isMobile, setIsMobile] = useState(false);
   const [loading, setLoading] = useState(!initialPayload.topics?.length);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -197,28 +198,32 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1680px] px-3 pb-10 sm:px-4 md:px-5 lg:px-6">
+    <div className="mx-auto w-full max-w-[1440px] px-4 pb-12 sm:px-6 lg:px-8">
       <a href="#main" className="skip-link">{t.skipToContent}</a>
       <AppShell search={search} onSearchChange={setSearch} updatedAt={updatedAtIso ? formatClock(updatedAtIso, language) : "—"} onRefresh={() => void loadTrends(activeRadar, { skipCache: true })} refreshing={loading} activeView={activeView} onViewChange={setActiveView} language={language} onLanguageChange={setLanguage} themeMode={themeMode} onThemeToggle={() => setThemeMode((currentTheme) => currentTheme === "dark" ? "light" : "dark")} t={t} />
 
-      {loadFailed ? <div role="alert" className="mb-4 flex flex-col gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      {loadFailed ? <div role="alert" className="mx-auto mb-6 flex w-full max-w-[1280px] flex-col gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="flex items-center gap-2 text-sm font-medium text-darinol-text"><AlertIcon className="h-4 w-4 text-rose-600 dark:text-rose-400" />{t.loadFailed}</p>
         <button type="button" onClick={() => void loadTrends(activeRadar, { skipCache: true })} className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-darinol-primaryFill px-4 text-xs font-semibold text-white transition hover:brightness-105"><RefreshIcon className="h-3.5 w-3.5" />{t.refresh}</button>
       </div> : null}
 
-      <header className="mb-5 max-w-3xl">
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-darinol-text sm:text-3xl">{t.heroTitle}</h1>
-        <p className="mt-2 text-sm leading-relaxed text-darinol-muted sm:text-base">{t.heroBody}</p>
-        <div className="mt-4 flex flex-wrap gap-2">
+      <header className="mx-auto mb-10 w-full max-w-[1280px]">
+        <div className="max-w-3xl">
+          <h1 className="font-heading text-3xl font-bold leading-tight tracking-tight text-darinol-text sm:text-4xl lg:text-5xl">{t.heroTitle}</h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-darinol-muted sm:text-lg">{t.heroBody}</p>
+        </div>
+        <div className="mt-6 flex flex-wrap gap-3">
           <button type="button" onClick={() => handleSelectRadar("culture")} className="tap-target h-10 rounded-full bg-darinol-primaryFill px-4 text-xs font-semibold text-white transition hover:brightness-105">{t.exploreCulture}</button>
           <button type="button" onClick={() => setActiveView("latest")} className="tap-target h-10 rounded-full border border-darinol-border bg-darinol-surface/70 px-4 text-xs font-semibold text-darinol-text transition hover:border-darinol-primary/50 hover:text-darinol-primaryInk">{t.readLatest}</button>
         </div>
       </header>
 
-      <main id="main">{activeView === "radar" ? <div className="grid items-start gap-4 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)]">
+      <main id="main" className="mx-auto w-full max-w-[1280px]">
+        {activeView === "radar" ? <div className="grid items-start gap-6 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)]">
         <TopicList topics={filteredTopics} totalCount={filteredTopics.length} selectedTopicId={selectedTopic?.id ?? null} activeRadar={activeRadar} selectedCategories={selectedCategories} onCategoryPreferenceChange={handleCategoryPreferenceChange} onResetCategories={handleResetCategories} onRadarChange={handleSelectRadar} categoryFilters={categoryFilters} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onSelectTopic={handleSelectTopic} loading={loading} search={search} onSearchChange={setSearch} language={language} t={t} />
         <div ref={detailRef} className="lg:sticky lg:top-32"><TopicDetail topic={selectedTopic} loading={loading} language={language} onNextTopic={handleNextTopic} t={t} /></div>
-      </div> : <LatestFeed articles={latestFeed} loading={loading} language={language} t={t} />}</main>
+      </div> : <LatestFeed articles={latestFeed} loading={loading} language={language} t={t} />}
+      </main>
       <TrendAgent topics={filteredTopics} language={language} />
     </div>
   );

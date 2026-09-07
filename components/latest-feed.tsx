@@ -26,9 +26,9 @@ export function LatestFeed({
 
   return (
     <section aria-label={t.latestTitle} className="glass-card overflow-hidden rounded-2xl">
-      <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-darinol-border/60 p-4 md:p-5">
+      <header className="flex flex-wrap items-baseline justify-between gap-3 border-b border-darinol-border/60 p-5 sm:p-6">
         <div>
-          <h2 className="font-heading text-xl font-semibold tracking-tight text-darinol-text">
+          <h2 className="font-heading text-2xl font-semibold tracking-tight text-darinol-text sm:text-3xl">
             {t.latestTitle}
           </h2>
           <p className="mt-1 text-xs font-medium text-darinol-muted">{t.latestHint}</p>
@@ -38,7 +38,7 @@ export function LatestFeed({
         </span>
       </header>
 
-      <div className="p-4 md:p-5">
+      <div className="p-5 sm:p-6">
         {loading && !articles.length ? (
           <ArticleRowSkeleton count={8} t={t} />
         ) : groups.length ? (
