@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { MoonIcon, RefreshIcon, SearchIcon, SunIcon } from "./icons";
 import { SegmentedTabs } from "./segmented-tabs";
 import type { Copy, Language, MainView, ThemeMode } from "@/lib/copy";
@@ -41,8 +42,8 @@ export function AppShell({
         {/* Brand mark, not a link: it used to jump to #main, duplicating the
             skip link and adding a tab stop that did nothing useful. */}
         <p className="flex h-9 items-center gap-2.5">
-          <img
-            src="/darinol-icon.png?v=6"
+          <Image
+            src="/darinol-icon.png"
             alt=""
             width={32}
             height={32}

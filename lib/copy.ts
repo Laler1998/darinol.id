@@ -18,6 +18,14 @@ export const copy = {
     cultureRadarHint:
       "Video, komunitas, dan percakapan sosial yang sedang ramai.",
     allRadarHint: "Gabungan berita dan sosial dalam satu radar.",
+    heroTitle: "Temukan tren yang sedang naik sebelum terlambat",
+    heroBody:
+      "Darinol menyaring berita, video, komunitas, dan percakapan sosial agar kamu bisa menemukan peluang konten lebih cepat.",
+    exploreCulture: "Jelajahi tren sosial & kreator",
+    readLatest: "Baca berita terbaru",
+    categoryPreferences: "Kategori yang kamu minati",
+    categoryPreferencesHint: "Pilih satu atau beberapa kategori untuk mempersonalisasi radar.",
+    resetCategories: "Reset ke semua kategori",
     radarTab: "Radar Tren",
     latestTab: "Berita Terbaru",
     trendScore: "Skor Tren",
@@ -62,6 +70,14 @@ export const copy = {
     cultureRadarHint:
       "Videos, communities, and social conversations gaining attention.",
     allRadarHint: "News and social signals combined into one radar.",
+    heroTitle: "Find rising trends before everyone else",
+    heroBody:
+      "Darinol filters news, video, communities, and social conversations so you can spot content opportunities faster.",
+    exploreCulture: "Explore social & creator trends",
+    readLatest: "Read the latest news",
+    categoryPreferences: "Categories you follow",
+    categoryPreferencesHint: "Choose one or more categories to personalize your radar.",
+    resetCategories: "Reset to all categories",
     radarTab: "Trend Radar",
     latestTab: "Latest News",
     trendScore: "Trend Score",

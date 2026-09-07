@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { articleSlug, findRssArticle } from "@/lib/rss";
+import { articleSlug, fetchRssArticles, findRssArticle, type NormalizedRssArticle } from "@/lib/rss";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://darinol.online";
 
@@ -14,6 +14,49 @@ function formatDate(value: string | null) {
     dateStyle: "long",
     timeZone: "UTC",
   }).format(date);
+}
+
+function compactSummary(value: string | null, source: string) {
+  const text = value?.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  if (!text) return `Ringkasan berita dari ${source} di Darinol.id.`;
+  if (text.length <= 220) return text;
+
+  return `${text.slice(0, 217).replace(/\s+\S*$/, "")}...`;
+}
+
+function articleImageUrl(article: NormalizedRssArticle) {
+  if (!article.image) return `${siteUrl}/darinol-og.png`;
+
+  try {
+    return new URL(article.image, article.url ?? siteUrl).toString();
+  } catch {
+    return `${siteUrl}/darinol-og.png`;
+  }
+}
+
+function relatedArticles(article: NormalizedRssArticle, articles: NormalizedRssArticle[]) {
+  const words = new Set(
+    (article.title ?? "")
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((word) => word.length > 3),
+  );
+
+  return articles
+    .filter((candidate) => candidate.url && candidate.title && candidate.url !== article.url)
+    .map((candidate) => {
+      const sharedWords = (candidate.title ?? "")
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((word) => words.has(word)).length;
+      const sameSource = candidate.source.name === article.source.name ? 1 : 0;
+
+      return { candidate, score: sharedWords * 2 + sameSource };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(({ candidate }) => candidate);
 }
 
 export async function generateMetadata({
@@ -31,8 +74,7 @@ export async function generateMetadata({
     };
   }
 
-  const description = article.description?.trim() ||
-    `Ringkasan berita dari ${article.source.name} di Darinol.id.`;
+  const description = compactSummary(article.description, article.source.name);
   const canonical = `${siteUrl}/artikel/${articleSlug(article.title, article.source.name)}`;
 
   return {
@@ -49,7 +91,7 @@ export async function generateMetadata({
       publishedTime: article.publishedAt ?? undefined,
       authors: [article.source.name],
       images: [{
-        url: `${siteUrl}/darinol-og.png`,
+        url: articleImageUrl(article),
         width: 1200,
         height: 630,
         alt: article.title,
@@ -59,7 +101,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title: article.title,
       description,
-      images: [`${siteUrl}/darinol-og.png`],
+      images: [articleImageUrl(article)],
     },
   };
 }
@@ -70,26 +112,29 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = await findRssArticle(slug);
+  const [article, articles] = await Promise.all([
+    findRssArticle(slug),
+    fetchRssArticles().catch(() => []),
+  ]);
 
   if (!article?.title || !article.url) notFound();
 
   const publishedDate = formatDate(article.publishedAt);
   const canonical = `${siteUrl}/artikel/${articleSlug(article.title, article.source.name)}`;
-  const description = article.description?.trim() ||
-    `Ringkasan berita dari ${article.source.name} di Darinol.id.`;
+  const description = compactSummary(article.description, article.source.name);
+  const related = relatedArticles(article, articles);
+  const articleImage = articleImageUrl(article);
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": "NewsArticle",
     headline: article.title,
     description,
-    image: [`${siteUrl}/darinol-og.png`],
+    image: [articleImage],
     datePublished: article.publishedAt ?? undefined,
     dateModified: article.publishedAt ?? undefined,
     author: {
       "@type": "Organization",
-      name: "Darinol.id",
-      url: siteUrl,
+      name: article.source.name,
     },
     publisher: {
       "@type": "Organization",
@@ -123,6 +168,16 @@ export default async function ArticlePage({
         </header>
 
         <article className="mx-auto mt-10 max-w-3xl">
+          <nav aria-label="Breadcrumb" className="mb-6 text-xs font-medium text-darinol-muted">
+            <a href="/" className="transition hover:text-darinol-primaryInk">
+              Radar tren
+            </a>
+            <span className="mx-2" aria-hidden="true">
+              /
+            </span>
+            <span aria-current="page">Ringkasan berita</span>
+          </nav>
+
           <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-darinol-muted">
             <span className="rounded-full bg-darinol-primary/10 px-3 py-1 text-darinol-primaryInk">
               Ringkasan berita
@@ -156,12 +211,42 @@ export default async function ArticlePage({
             <a
               href={article.url}
               target="_blank"
-              rel="noreferrer"
-              className="tap-target mt-6 inline-flex min-h-11 items-center rounded-full bg-darinol-primaryFill px-5 text-sm font-semibold text-white transition hover:brightness-105"
+              rel="noopener noreferrer"
+              className="tap-target inline-flex min-h-11 items-center rounded-full bg-darinol-primaryFill px-5 text-sm font-semibold text-white transition hover:brightness-105"
             >
-              Baca sumber asli
+              Baca artikel lengkap di {article.source.name}
+            </a>
+            <a
+              href="/"
+              className="tap-target mt-3 inline-flex min-h-11 items-center rounded-full border border-darinol-border bg-darinol-surface/70 px-5 text-sm font-semibold text-darinol-text transition hover:border-darinol-primary/50 hover:text-darinol-primaryInk sm:ml-3 sm:mt-0"
+            >
+              Temukan tren lainnya
             </a>
           </div>
+
+          {related.length ? (
+            <section aria-labelledby="related-articles" className="mt-12 border-t border-darinol-border/70 pt-8">
+              <h2 id="related-articles" className="font-heading text-xl font-semibold text-darinol-text">
+                Artikel Terkait
+              </h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {related.map((relatedArticle) => (
+                  <a
+                    key={`${relatedArticle.source.name}-${relatedArticle.url}`}
+                    href={`/artikel/${articleSlug(relatedArticle.title ?? "", relatedArticle.source.name)}`}
+                    className="group rounded-xl border border-darinol-border/70 bg-darinol-surface/50 p-4 transition hover:border-darinol-primary/50 hover:bg-darinol-surface"
+                  >
+                    <p className="text-sm font-semibold leading-snug text-darinol-text group-hover:text-darinol-primaryInk">
+                      {relatedArticle.title}
+                    </p>
+                    <p className="mt-3 text-xs font-medium text-darinol-muted">
+                      {relatedArticle.source.name}
+                    </p>
+                  </a>
+                ))}
+              </div>
+            </section>
+          ) : null}
         </article>
       </div>
       <script

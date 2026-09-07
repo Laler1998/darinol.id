@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:fresh": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && next dev",
+    "dev": "cross-env NODE_OPTIONS=--disable-warning=DEP0169 next dev",
+    "dev:fresh": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && cross-env NODE_OPTIONS=--disable-warning=DEP0169 next dev",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit --ignoreDeprecations 6.0",
-    "build": "next build",
-    "start": "next start",
+    "build": "cross-env NODE_OPTIONS=--disable-warning=DEP0169 next build",
+    "start": "cross-env NODE_OPTIONS=--disable-warning=DEP0169 next start",
     "lint": "next lint"
   },
   "dependencies": {
@@ -29,6 +29,7 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "autoprefixer": "latest",
+    "cross-env": "^10.0.0",
     "postcss": "latest",
     "tailwindcss": "^3.4.17",
     "typescript": "latest",

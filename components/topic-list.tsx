@@ -5,6 +5,7 @@ import { SearchIcon } from "./icons";
 import { TopicRow } from "./topic-row";
 import { TopicRowSkeleton } from "./skeletons";
 import { getCategoryStyle } from "@/lib/categories";
+import { newsCategoryFilters } from "@/lib/copy";
 import type { Copy, Language } from "@/lib/copy";
 import type { RadarFilter, Topic } from "@/lib/types";
 
@@ -13,6 +14,9 @@ export function TopicList({
   totalCount,
   selectedTopicId,
   activeRadar,
+  selectedCategories,
+  onCategoryPreferenceChange,
+  onResetCategories,
   onRadarChange,
   categoryFilters,
   activeCategory,
@@ -28,6 +32,9 @@ export function TopicList({
   totalCount: number;
   selectedTopicId: string | null;
   activeRadar: RadarFilter;
+  selectedCategories: string[];
+  onCategoryPreferenceChange: (category: string) => void;
+  onResetCategories: () => void;
   onRadarChange: (radar: RadarFilter) => void;
   categoryFilters: string[];
   activeCategory: string;
@@ -39,7 +46,7 @@ export function TopicList({
   language: Language;
   t: Copy;
 }) {
-  const showSkeleton = loading && topics.length === 0;
+  const showSkeleton = loading;
   const chipStripRef = useRef<HTMLDivElement | null>(null);
 
   // The chip strip scrolls horizontally, so the active filter can end up off
@@ -75,6 +82,52 @@ export function TopicList({
             className="h-10 w-full rounded-full border border-darinol-border bg-darinol-surface/70 pl-9 pr-3 text-sm text-darinol-text placeholder:text-darinol-muted focus:border-darinol-primary focus:outline-none focus:ring-2 focus:ring-darinol-primary/25"
           />
         </label>
+
+        <div className="mb-3 rounded-xl border border-darinol-border/60 bg-darinol-surface/40 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-xs font-semibold text-darinol-text">{t.categoryPreferences}</h3>
+              <p className="mt-1 text-[11px] leading-relaxed text-darinol-muted">
+                {t.categoryPreferencesHint}
+              </p>
+            </div>
+            {selectedCategories.length ? (
+              <button
+                type="button"
+                onClick={onResetCategories}
+                className="shrink-0 text-[11px] font-semibold text-darinol-primaryInk underline-offset-2 hover:underline"
+              >
+                {t.resetCategories}
+              </button>
+            ) : null}
+          </div>
+          <div className="-mx-1 mt-2 flex gap-1.5 overflow-x-auto px-1 py-1">
+            {newsCategoryFilters
+              .filter((category) => category !== "Semua")
+              .map((category) => {
+                const selected = selectedCategories.includes(category);
+                const style = getCategoryStyle(category, false);
+
+                return (
+                  <button
+                    key={`preference-${category}`}
+                    type="button"
+                    onClick={() => onCategoryPreferenceChange(category)}
+                    aria-pressed={selected}
+                    className={[
+                      "tap-target flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold transition",
+                      selected
+                        ? "border-darinol-primary bg-darinol-primary/10 text-darinol-primaryInk"
+                        : "border-darinol-border bg-darinol-surface/50 text-darinol-muted hover:border-darinol-primary/40 hover:text-darinol-text",
+                    ].join(" ")}
+                  >
+                    <span className={["h-1.5 w-1.5 rounded-full", style.dot].join(" ")} aria-hidden="true" />
+                    {category}
+                  </button>
+                );
+              })}
+          </div>
+        </div>
 
         <div
           role="group"
