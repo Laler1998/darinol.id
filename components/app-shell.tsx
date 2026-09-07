@@ -43,15 +43,12 @@ export function AppShell({
             skip link and adding a tab stop that did nothing useful. */}
         <p className="flex h-9 items-center gap-2.5">
           <Image
-            src="/darinol-icon-512.png"
-            alt=""
-            width={32}
-            height={32}
-            className="h-8 w-8 rounded-[26%] object-cover"
+            src="/darinol-wordmark.png"
+            alt="Darinol.id"
+            width={270}
+            height={90}
+            className="h-8 w-auto object-contain"
           />
-          <span className="hidden font-heading text-base font-semibold tracking-tight text-darinol-text sm:block">
-            Darinol<span className="text-darinol-primaryInk">.id</span>
-          </span>
         </p>
 
         <label className="relative ml-auto hidden min-w-0 flex-1 md:block md:max-w-sm">

@@ -1,22 +1,31 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function LoadingOverlay({ active }: { active: boolean }) {
   const [visible, setVisible] = useState(active);
   const [fallback, setFallback] = useState(false);
+  const [animationEnded, setAnimationEnded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     if (active) {
       setVisible(true);
       setFallback(false);
+      setAnimationEnded(false);
       return;
     }
 
+    if (!animationEnded) return;
+
     const timeout = window.setTimeout(() => setVisible(false), 420);
     return () => window.clearTimeout(timeout);
-  }, [active]);
+  }, [active, animationEnded]);
+
+  useEffect(() => {
+    if (!active && fallback) setAnimationEnded(true);
+  }, [active, fallback]);
 
   if (!visible) return null;
 
@@ -25,7 +34,7 @@ export function LoadingOverlay({ active }: { active: boolean }) {
       <div className="loading-overlay-stage">
         {fallback ? (
           <div className="loading-fallback" role="status">
-            <Image src="/darinol-icon.png" alt="Darinol" width={112} height={112} priority />
+            <Image src="/darinol-wordmark.png" alt="Darinol" width={540} height={180} priority />
             <div className="loading-fallback-lines" aria-hidden="true">
               <span />
               <span />
@@ -35,13 +44,26 @@ export function LoadingOverlay({ active }: { active: boolean }) {
           </div>
         ) : (
           <video
+            ref={videoRef}
             className="loading-video"
             autoPlay
-            loop
+            loop={active && !animationEnded}
             muted
             playsInline
             preload="auto"
-            onError={() => setFallback(true)}
+            onError={() => {
+              setFallback(true);
+              if (!active) setAnimationEnded(true);
+            }}
+            onEnded={() => {
+              if (active && videoRef.current) {
+                videoRef.current.currentTime = 0;
+                void videoRef.current.play();
+                return;
+              }
+
+              setAnimationEnded(true);
+            }}
             aria-label="Animasi logo Darinol"
           >
             <source src="/darinol-loading.mp4" type="video/mp4" />
