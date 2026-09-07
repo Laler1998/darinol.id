@@ -10,7 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     {
       url: siteUrl,
-      lastModified: "2026-08-28",
+      lastModified: "2026-09-07",
       changeFrequency: "daily",
       priority: 1,
     },
@@ -24,7 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const publishedAt = article.publishedAt ? new Date(article.publishedAt) : null;
       const lastModified = publishedAt && !Number.isNaN(publishedAt.getTime())
         ? publishedAt
-        : "2026-08-28";
+        : "2026-09-07";
 
       return [{
         url,
