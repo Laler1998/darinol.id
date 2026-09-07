@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { articleSlug, fetchRssArticles } from "@/lib/rss";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://darinol.online";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.darinol.online";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articles = await fetchRssArticles().catch(() => []);

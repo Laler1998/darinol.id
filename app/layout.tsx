@@ -4,7 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ServiceWorker } from "@/components/service-worker";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://darinol.online";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.darinol.online";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

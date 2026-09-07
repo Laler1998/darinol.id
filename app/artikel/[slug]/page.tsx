@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { articleSlug, fetchRssArticles, findRssArticle, type NormalizedRssArticle } from "@/lib/rss";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://darinol.online";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.darinol.online";
 
 function formatDate(value: string | null) {
   if (!value) return null;

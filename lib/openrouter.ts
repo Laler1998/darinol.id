@@ -9,7 +9,7 @@ export function getTrendRadarModel() {
   const openrouter = createOpenRouter({
     apiKey,
     headers: {
-      "HTTP-Referer": "https://darinol.online",
+      "HTTP-Referer": "https://www.darinol.online",
       "X-Title": "Darinol.id Trend Radar",
     },
   });
