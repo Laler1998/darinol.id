@@ -31,6 +31,7 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
   // Dark is the intended premium default; a stored preference still wins.
   const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
   const [isMobile, setIsMobile] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [loading, setLoading] = useState(!initialPayload.topics?.length);
   const [initialOverlay, setInitialOverlay] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -41,6 +42,7 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
   const t = copy[language];
 
   useEffect(() => {
+    setIsHydrated(true);
     const storedLanguage = window.localStorage.getItem("darinol-language");
     const storedTheme = window.localStorage.getItem("darinol-theme");
     const storedCategories = window.localStorage.getItem("darinol-category-preferences");
@@ -206,7 +208,7 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
   return (
     <div className="mx-auto w-full max-w-[1680px] px-4 pb-12 sm:px-6 lg:px-8 xl:px-10">
       <a href="#main" className="skip-link">{t.skipToContent}</a>
-      <AppShell search={search} onSearchChange={setSearch} updatedAt={updatedAtIso ? formatClock(updatedAtIso, language) : "—"} onRefresh={() => void loadTrends(activeRadar, { skipCache: true })} refreshing={loading} activeView={activeView} onViewChange={setActiveView} language={language} onLanguageChange={setLanguage} themeMode={themeMode} onThemeToggle={() => setThemeMode((currentTheme) => currentTheme === "dark" ? "light" : "dark")} t={t} />
+      <AppShell search={search} onSearchChange={setSearch} updatedAt={isHydrated && updatedAtIso ? formatClock(updatedAtIso, language) : "—"} onRefresh={() => void loadTrends(activeRadar, { skipCache: true })} refreshing={loading} activeView={activeView} onViewChange={setActiveView} language={language} onLanguageChange={setLanguage} themeMode={themeMode} onThemeToggle={() => setThemeMode((currentTheme) => currentTheme === "dark" ? "light" : "dark")} t={t} />
 
       {loadFailed ? <div role="alert" className="mx-auto mb-6 flex w-full max-w-[1520px] flex-col gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="flex items-center gap-2 text-sm font-medium text-darinol-text"><AlertIcon className="h-4 w-4 text-rose-600 dark:text-rose-400" />{t.loadFailed}</p>
