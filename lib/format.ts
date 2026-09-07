@@ -6,6 +6,7 @@ export function formatClock(value: string, language: "id" | "en" = "id") {
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Jakarta",
   }).format(new Date(value));
 }
 

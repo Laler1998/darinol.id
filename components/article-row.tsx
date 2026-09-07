@@ -46,7 +46,7 @@ export function ArticleRow({
         ) : null}
         <span className="truncate">{article.source}</span>
         <span aria-hidden="true">·</span>
-        <time dateTime={article.publishedAt ?? undefined} className="tabular-nums">
+        <time dateTime={article.publishedAt ?? undefined} className="tabular-nums" suppressHydrationWarning>
           {formatRelativeTime(article.publishedAt, language)}
         </time>
       </div>
