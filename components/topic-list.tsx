@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { SearchIcon } from "./icons";
+import { ChevronRightIcon, SearchIcon } from "./icons";
 import { TopicRow } from "./topic-row";
 import { TopicRowSkeleton } from "./skeletons";
 import { getCategoryStyle } from "@/lib/categories";
@@ -213,23 +213,6 @@ export function TopicList({
                   </button>
                 );
               })}
-              {overflowCategories.length ? (
-                <select
-                  aria-label={t.categoryDropdownLabel}
-                  value={overflowCategories.includes(activeCategory) ? activeCategory : ""}
-                  onChange={(event) => onCategoryChange(event.target.value)}
-                  className="tap-target h-8 shrink-0 rounded-full border border-darinol-border bg-darinol-surface/50 px-2.5 text-[11px] font-semibold text-darinol-muted transition hover:border-darinol-primary/40 hover:text-darinol-text focus:border-darinol-primary focus:outline-none"
-                >
-                  <option value="" disabled>
-                    {t.moreCategories}
-                  </option>
-                  {overflowCategories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
             </>
           ) : (
             categoryFilters.map((category) => {
@@ -265,6 +248,50 @@ export function TopicList({
             })
           )}
         </div>
+
+        {isNewsCategorySet && overflowCategories.length ? (
+          <details className="group relative mt-2">
+            <summary
+              aria-label={t.categoryDropdownLabel}
+              className="flex min-h-10 w-full cursor-pointer list-none items-center justify-between gap-3 rounded-xl border border-darinol-border bg-darinol-surface/40 px-3 text-xs font-semibold text-darinol-muted transition hover:border-darinol-primary/40 hover:text-darinol-text focus:outline-none"
+            >
+              <span className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-darinol-primary" aria-hidden="true" />
+                {overflowCategories.includes(activeCategory) ? activeCategory : t.moreCategories}
+              </span>
+              <ChevronRightIcon className="h-3.5 w-3.5 rotate-90 transition group-open:-rotate-90" />
+            </summary>
+            <div className="absolute left-0 right-0 top-full z-30 mt-2 rounded-xl border border-darinol-border bg-darinol-surface p-1.5 shadow-[0_16px_36px_rgba(8,12,16,0.28)]">
+              <p className="px-2.5 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-darinol-muted">
+                {t.moreCategories}
+              </p>
+              <div className="grid gap-1 sm:grid-cols-2">
+                {overflowCategories.map((category) => {
+                  const active = activeCategory === category;
+                  const style = getCategoryStyle(category, false);
+
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => onCategoryChange(category)}
+                      aria-pressed={active}
+                      className={[
+                        "flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left text-xs font-semibold transition",
+                        active
+                          ? "bg-darinol-primary/10 text-darinol-primaryInk"
+                          : "text-darinol-muted hover:bg-darinol-surfaceRaised hover:text-darinol-text",
+                      ].join(" ")}
+                    >
+                      <span className={["h-1.5 w-1.5 rounded-full", style.dot].join(" ")} aria-hidden="true" />
+                      <span className="flex-1">{category}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </details>
+        ) : null}
       </header>
 
       {/*

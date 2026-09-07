@@ -184,6 +184,67 @@ button {
   animation: shimmer 1.4s ease-in-out infinite;
 }
 
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: #000;
+  transition: opacity 420ms ease;
+}
+
+.loading-overlay-active {
+  opacity: 1;
+}
+
+.loading-overlay-leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-overlay-stage {
+  display: grid;
+  place-items: center;
+  width: min(82vw, 430px);
+  height: min(78vh, 540px);
+}
+
+.loading-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.loading-fallback {
+  display: grid;
+  justify-items: center;
+  gap: 1.5rem;
+}
+
+.loading-fallback-lines {
+  display: grid;
+  gap: 0.5rem;
+  width: 9rem;
+}
+
+.loading-fallback-lines span {
+  display: block;
+  height: 0.4rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.loading-fallback-lines span:nth-child(2) {
+  width: 75%;
+}
+
+.loading-fallback-lines span:nth-child(3) {
+  width: 52%;
+}
+
 @keyframes shimmer {
   to {
     transform: translateX(100%);

@@ -6,6 +6,7 @@ import { LatestFeed } from "@/components/latest-feed";
 import { TopicDetail } from "@/components/topic-detail";
 import { TopicList } from "@/components/topic-list";
 import { TrendAgent } from "@/components/trend-agent";
+import { LoadingOverlay } from "@/components/loading-overlay";
 import { AlertIcon, RefreshIcon } from "@/components/icons";
 import { type Language, type MainView, type ThemeMode, copy, cultureCategoryFilters, newsCategoryFilters } from "@/lib/copy";
 import { buildLatestFeed, formatClock } from "@/lib/format";
@@ -31,6 +32,7 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
   const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
   const [isMobile, setIsMobile] = useState(false);
   const [loading, setLoading] = useState(!initialPayload.topics?.length);
+  const [initialOverlay, setInitialOverlay] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [updatedAtIso, setUpdatedAtIso] = useState(initialPayload.updatedAt ?? "");
   const requestRef = useRef(0);
@@ -80,6 +82,10 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
       JSON.stringify(selectedCategories),
     );
   }, [selectedCategories]);
+
+  useEffect(() => {
+    if (!loading) setInitialOverlay(false);
+  }, [loading]);
 
   const applyPayload = useCallback((payload: TrendsPayload) => {
     if (!payload.topics?.length) return;
@@ -198,16 +204,16 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] px-4 pb-12 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-[1680px] px-4 pb-12 sm:px-6 lg:px-8 xl:px-10">
       <a href="#main" className="skip-link">{t.skipToContent}</a>
       <AppShell search={search} onSearchChange={setSearch} updatedAt={updatedAtIso ? formatClock(updatedAtIso, language) : "—"} onRefresh={() => void loadTrends(activeRadar, { skipCache: true })} refreshing={loading} activeView={activeView} onViewChange={setActiveView} language={language} onLanguageChange={setLanguage} themeMode={themeMode} onThemeToggle={() => setThemeMode((currentTheme) => currentTheme === "dark" ? "light" : "dark")} t={t} />
 
-      {loadFailed ? <div role="alert" className="mx-auto mb-6 flex w-full max-w-[1280px] flex-col gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      {loadFailed ? <div role="alert" className="mx-auto mb-6 flex w-full max-w-[1520px] flex-col gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="flex items-center gap-2 text-sm font-medium text-darinol-text"><AlertIcon className="h-4 w-4 text-rose-600 dark:text-rose-400" />{t.loadFailed}</p>
         <button type="button" onClick={() => void loadTrends(activeRadar, { skipCache: true })} className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-darinol-primaryFill px-4 text-xs font-semibold text-white transition hover:brightness-105"><RefreshIcon className="h-3.5 w-3.5" />{t.refresh}</button>
       </div> : null}
 
-      <header className="mx-auto mb-10 w-full max-w-[1280px]">
+      <header className="mx-auto mb-10 w-full max-w-[1520px]">
         <div className="max-w-3xl">
           <h1 className="font-heading text-3xl font-bold leading-tight tracking-tight text-darinol-text sm:text-4xl lg:text-5xl">{t.heroTitle}</h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-darinol-muted sm:text-lg">{t.heroBody}</p>
@@ -218,12 +224,13 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
         </div>
       </header>
 
-      <main id="main" className="mx-auto w-full max-w-[1280px]">
+      <main id="main" className="mx-auto w-full max-w-[1520px]">
         {activeView === "radar" ? <div className="grid items-start gap-6 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)]">
         <TopicList topics={filteredTopics} totalCount={filteredTopics.length} selectedTopicId={selectedTopic?.id ?? null} activeRadar={activeRadar} selectedCategories={selectedCategories} onCategoryPreferenceChange={handleCategoryPreferenceChange} onResetCategories={handleResetCategories} onRadarChange={handleSelectRadar} categoryFilters={categoryFilters} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onSelectTopic={handleSelectTopic} loading={loading} search={search} onSearchChange={setSearch} language={language} t={t} />
         <div ref={detailRef} className="lg:sticky lg:top-32"><TopicDetail topic={selectedTopic} loading={loading} language={language} onNextTopic={handleNextTopic} t={t} /></div>
       </div> : <LatestFeed articles={latestFeed} loading={loading} language={language} t={t} />}
       </main>
+      <LoadingOverlay active={loading || initialOverlay} />
       <TrendAgent topics={filteredTopics} language={language} />
     </div>
   );

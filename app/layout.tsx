@@ -36,20 +36,20 @@ export const metadata: Metadata = {
     },
   },
   applicationName: "Darinol.id",
-  manifest: "/site.webmanifest?v=6",
+  manifest: "/site.webmanifest?v=7",
   icons: {
     icon: [
-      { url: "/darinol-icon.png?v=6", sizes: "1024x1024", type: "image/png" },
-      { url: "/favicon.ico?v=6", sizes: "32x32", type: "image/x-icon" },
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/favicon.svg?v=3", type: "image/svg+xml" },
+      { url: "/darinol-icon-16.png?v=7", sizes: "16x16", type: "image/png" },
+      { url: "/darinol-icon-32.png?v=7", sizes: "32x32", type: "image/png" },
+      { url: "/darinol-icon-192.png?v=7", sizes: "192x192", type: "image/png" },
+      { url: "/darinol-icon-512.png?v=7", sizes: "512x512", type: "image/png" },
     ],
-    shortcut: "/darinol-icon.png?v=6",
-    apple: "/darinol-icon.png?v=6",
+    shortcut: "/darinol-icon-32.png?v=7",
+    apple: "/darinol-icon-180.png?v=7",
     other: [
       {
         rel: "mask-icon",
-        url: "/icon.svg",
+        url: "/darinol-icon-512.png?v=7",
         color: "#FF7A45",
       },
     ],
@@ -108,7 +108,7 @@ const structuredData = {
       url: siteUrl,
       logo: {
         "@type": "ImageObject",
-        url: `${siteUrl}/darinol-icon.png`,
+        url: `${siteUrl}/darinol-icon-512.png`,
       },
     },
     {
