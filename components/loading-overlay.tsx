@@ -3,10 +3,13 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+const MINIMUM_DISPLAY_MS = 4200;
+
 export function LoadingOverlay({ active }: { active: boolean }) {
   const [visible, setVisible] = useState(active);
   const [fallback, setFallback] = useState(false);
   const [animationEnded, setAnimationEnded] = useState(false);
+  const [minimumElapsed, setMinimumElapsed] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
@@ -14,14 +17,22 @@ export function LoadingOverlay({ active }: { active: boolean }) {
       setVisible(true);
       setFallback(false);
       setAnimationEnded(false);
+      setMinimumElapsed(false);
       return;
     }
 
-    if (!animationEnded) return;
+    if (!animationEnded || !minimumElapsed) return;
 
     const timeout = window.setTimeout(() => setVisible(false), 420);
     return () => window.clearTimeout(timeout);
-  }, [active, animationEnded]);
+  }, [active, animationEnded, minimumElapsed]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const timeout = window.setTimeout(() => setMinimumElapsed(true), MINIMUM_DISPLAY_MS);
+    return () => window.clearTimeout(timeout);
+  }, [visible]);
 
   useEffect(() => {
     if (!active && fallback) setAnimationEnded(true);
@@ -29,8 +40,10 @@ export function LoadingOverlay({ active }: { active: boolean }) {
 
   if (!visible) return null;
 
+  const leaving = !active && animationEnded && minimumElapsed;
+
   return (
-    <div className={`loading-overlay ${active ? "loading-overlay-active" : "loading-overlay-leaving"}`} aria-live="polite" aria-busy={active}>
+    <div className={`loading-overlay ${leaving ? "loading-overlay-leaving" : "loading-overlay-active"}`} aria-live="polite" aria-busy={!leaving}>
       <div className="loading-overlay-stage">
         {fallback ? (
           <div className="loading-fallback" role="status">
@@ -47,7 +60,7 @@ export function LoadingOverlay({ active }: { active: boolean }) {
             ref={videoRef}
             className="loading-video"
             autoPlay
-            loop={active && !animationEnded}
+            loop={false}
             muted
             playsInline
             preload="auto"
