@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ServiceWorker } from "@/components/service-worker";
@@ -132,7 +133,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
       <body>
         <script
           // Applies the stored (or default dark) theme before first paint so
@@ -151,6 +152,19 @@ export default function RootLayout({
         <ServiceWorker />
         <Analytics />
         <SpeedInsights />
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-0L1FE7RD2N"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){window.dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-0L1FE7RD2N');
+          `}
+        </Script>
       </body>
     </html>
   );

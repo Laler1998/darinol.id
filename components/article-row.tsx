@@ -63,7 +63,7 @@ export function ArticleRow({
 
   return (
     <a
-      href={article.slug ? `/artikel/${article.slug}` : article.url}
+      href={article.slug ? `/artikel/${article.slug}?source=${encodeURIComponent(article.url)}` : article.url}
       target={article.slug ? undefined : "_blank"}
       rel={article.slug ? undefined : "noreferrer"}
       className="group block rounded-xl border border-darinol-border/60 bg-darinol-surface/40 px-3.5 py-3 transition hover:border-darinol-primary/50 hover:bg-darinol-surface"

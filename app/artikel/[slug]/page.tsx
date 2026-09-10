@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { articleSlug, fetchRssArticles, findRssArticle, type NormalizedRssArticle } from "@/lib/rss";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.darinol.online";
@@ -59,6 +59,17 @@ function relatedArticles(article: NormalizedRssArticle, articles: NormalizedRssA
     .map(({ candidate }) => candidate);
 }
 
+function validPublisherUrl(value: string | undefined) {
+  if (!value) return null;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -108,16 +119,23 @@ export async function generateMetadata({
 
 export default async function ArticlePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ source?: string }>;
 }) {
   const { slug } = await params;
+  const { source } = await searchParams;
   const [article, articles] = await Promise.all([
     findRssArticle(slug),
     fetchRssArticles().catch(() => []),
   ]);
 
-  if (!article?.title || !article.url) notFound();
+  if (!article?.title || !article.url) {
+    const publisherUrl = validPublisherUrl(source);
+    if (publisherUrl) redirect(publisherUrl);
+    redirect(`https://news.google.com/search?q=${encodeURIComponent(slug.replace(/-/g, " "))}`);
+  }
 
   const publishedDate = formatDate(article.publishedAt);
   const canonical = `${siteUrl}/artikel/${articleSlug(article.title, article.source.name)}`;
@@ -233,7 +251,7 @@ export default async function ArticlePage({
                 {related.map((relatedArticle) => (
                   <a
                     key={`${relatedArticle.source.name}-${relatedArticle.url}`}
-                    href={`/artikel/${articleSlug(relatedArticle.title ?? "", relatedArticle.source.name)}`}
+                    href={`/artikel/${articleSlug(relatedArticle.title ?? "", relatedArticle.source.name)}?source=${encodeURIComponent(relatedArticle.url ?? "")}`}
                     className="group rounded-xl border border-darinol-border/70 bg-darinol-surface/50 p-4 transition hover:border-darinol-primary/50 hover:bg-darinol-surface"
                   >
                     <p className="text-sm font-semibold leading-snug text-darinol-text group-hover:text-darinol-primaryInk">

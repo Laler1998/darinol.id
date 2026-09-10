@@ -37,8 +37,8 @@ export function AppShell({
   t: Copy;
 }) {
   return (
-    <div className="sticky top-0 z-40 -mx-4 mb-6 border-b border-darinol-border/70 bg-darinol-background/85 px-4 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-      <div className="mx-auto flex h-14 w-full max-w-[1520px] items-center gap-3">
+    <div className="app-shell sticky top-0 z-40 mx-auto mb-8 w-full max-w-[1520px] px-3 pt-3 sm:px-5 lg:px-7">
+      <div className="app-shell-inner mx-auto flex min-h-14 w-full items-center gap-3 rounded-2xl border border-white/60 bg-white/55 px-3 shadow-[0_16px_42px_rgba(26,26,26,0.07)] backdrop-blur-xl sm:px-4">
         {/* Brand mark, not a link: it used to jump to #main, duplicating the
             skip link and adding a tab stop that did nothing useful. */}
         <p className="flex h-9 items-center gap-2.5">
@@ -110,7 +110,7 @@ export function AppShell({
         </div>
       </div>
 
-      <div className="mx-auto flex w-full max-w-[1520px] items-center justify-between gap-3 pb-3">
+      <div className="mx-auto flex w-full items-center justify-between gap-3 px-1 pt-3 sm:px-2">
         <SegmentedTabs activeView={activeView} onChange={onViewChange} t={t} />
         <p
           className="hidden shrink-0 text-[11px] font-medium text-darinol-muted sm:block"

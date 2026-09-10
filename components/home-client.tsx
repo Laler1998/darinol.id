@@ -6,6 +6,7 @@ import { LatestFeed } from "@/components/latest-feed";
 import { TopicDetail } from "@/components/topic-detail";
 import { TopicList } from "@/components/topic-list";
 import { TrendAgent } from "@/components/trend-agent";
+import { HeroProductVisual } from "@/components/hero-product-visual";
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { AlertIcon, RefreshIcon } from "@/components/icons";
 import { type Language, type MainView, type ThemeMode, copy, cultureCategoryFilters, newsCategoryFilters } from "@/lib/copy";
@@ -213,18 +214,23 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
         <button type="button" onClick={() => void loadTrends(activeRadar, { skipCache: true })} className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-darinol-primaryFill px-4 text-xs font-semibold text-white transition hover:brightness-105"><RefreshIcon className="h-3.5 w-3.5" />{t.refresh}</button>
       </div> : null}
 
-      <header className="mx-auto mb-10 w-full max-w-[1520px]">
-        <div className="max-w-3xl">
-          <h1 className="font-heading text-3xl font-bold leading-tight tracking-tight text-darinol-text sm:text-4xl lg:text-5xl">{t.heroTitle}</h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-darinol-muted sm:text-lg">{t.heroBody}</p>
+      <section className="hero-section" aria-labelledby="hero-title">
+        <div className="hero-copy">
+          <p className="eyebrow-text"><span className="eyebrow-dot" /> Darinol trend intelligence</p>
+          <h1 id="hero-title">{t.heroTitle}</h1>
+          <p className="hero-description">{t.heroBody}</p>
+          <div className="hero-actions">
+            <button type="button" onClick={() => document.getElementById("radar-section")?.scrollIntoView({ behavior: "smooth" })} className="tap-target orange-gradient hero-primary-action">Lihat radar tren <span aria-hidden="true">↗</span></button>
+            <button type="button" onClick={() => setActiveView("latest")} className="tap-target glass-soft hero-secondary-action">{t.readLatest}</button>
+          </div>
+          <button type="button" onClick={() => { handleSelectRadar("culture"); document.getElementById("radar-section")?.scrollIntoView({ behavior: "smooth" }); }} className="tap-target hero-text-action">{t.exploreCulture} <span aria-hidden="true">→</span></button>
+          <div className="hero-proof-row"><span><i /> Data publik terkurasi</span><span><i /> Update berkala</span><span><i /> Insight berbasis sinyal</span></div>
         </div>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button type="button" onClick={() => handleSelectRadar("culture")} className="tap-target h-10 rounded-full bg-darinol-primaryFill px-4 text-xs font-semibold text-white transition hover:brightness-105">{t.exploreCulture}</button>
-          <button type="button" onClick={() => setActiveView("latest")} className="tap-target h-10 rounded-full border border-darinol-border bg-darinol-surface/70 px-4 text-xs font-semibold text-darinol-text transition hover:border-darinol-primary/50 hover:text-darinol-primaryInk">{t.readLatest}</button>
-        </div>
-      </header>
+        <HeroProductVisual />
+      </section>
 
       <main id="main" className="mx-auto w-full max-w-[1520px]">
+        <div id="radar-section" className="scroll-mt-28" />
         {activeView === "radar" ? <div className="grid items-start gap-6 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)]">
         <TopicList topics={filteredTopics} totalCount={filteredTopics.length} selectedTopicId={selectedTopic?.id ?? null} activeRadar={activeRadar} selectedCategories={selectedCategories} onCategoryPreferenceChange={handleCategoryPreferenceChange} onResetCategories={handleResetCategories} onRadarChange={handleSelectRadar} categoryFilters={categoryFilters} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onSelectTopic={handleSelectTopic} loading={loading} search={search} onSearchChange={setSearch} language={language} t={t} />
         <div ref={detailRef} className="lg:sticky lg:top-32"><TopicDetail topic={selectedTopic} loading={loading} language={language} onNextTopic={handleNextTopic} t={t} /></div>
