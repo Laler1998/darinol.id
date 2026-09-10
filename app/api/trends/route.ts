@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { fetchRssArticles } from "@/lib/rss";
+import { articleSlug, fetchRssArticles, isRssSource } from "@/lib/rss";
 import { fetchCultureTrends, sampleCultureTrends, type RadarType } from "@/lib/culture-trends";
+import { growthLabel, scoreTopic } from "@/lib/scoring";
 import type { Topic, TopicArticle } from "@/lib/types";
 
 type NewsArticle = {
@@ -356,9 +357,9 @@ const categoryKeywords: Array<[string, string[]]> = [
   ["Social", ["reddit", "viral post", "thread"]],
   ["Peristiwa", ["demo", "unjuk rasa", "mahasiswa", "aksi", "massa", "polisi", "kecelakaan", "kebakaran", "banjir", "gempa", "longsor", "macet", "ditangkap", "kriminal", "korban", "evakuasi"]],
   ["Crypto", ["bitcoin", "crypto", "kripto", "ethereum", "blockchain", "solana", "binance", "coinbase", "token", "stablecoin"]],
-  ["Sports", ["timnas", "bola", "sepak", "liga", "pemain", "pertandingan", "piala dunia", "world cup"]],
+  ["Sports", ["timnas", "bola", "sepak", "liga", "pemain", "pertandingan", "piala dunia", "world cup", "football", "soccer", "sports", "nba", "motogp"]],
   ["Technology", ["ai", "openai", "nvidia", "teknologi", "video", "aplikasi", "startup", "digital", "software", "chip", "iphone", "google", "microsoft"]],
-  ["Entertainment", ["film", "musik", "artis", "aktor", "drama", "konser"]],
+  ["Entertainment", ["film", "movie", "musik", "music", "artis", "aktor", "actor", "drama", "konser", "concert", "entertainment", "celebrity", "series", "bioskop"]],
   ["Politics", ["prabowo", "presiden", "politik", "menteri", "pemerintah", "pilkada"]],
   ["Business", ["saham", "ekonomi", "rupiah", "bisnis", "bank", "harga", "ihsg", "wall street", "market", "stock", "fed", "inflation", "oil"]],
   ["Global", ["war", "trump", "china", "russia", "ukraine", "israel", "gaza", "europe", "asia", "world", "global"]],
@@ -530,6 +531,26 @@ function gdeltDate(value: Date) {
   ].join("");
 }
 
+function canonicalArticleUrl(value: string) {
+  try {
+    const url = new URL(value);
+    ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"]
+      .forEach((key) => url.searchParams.delete(key));
+    url.hash = "";
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return value.trim();
+  }
+}
+
+function normalizedArticleTitle(value: string) {
+  return value
+    .replace(/\s[-|]\s[^-|]+$/g, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
 function toGdeltPublishedAt(value?: string) {
   if (!value || value.length < 14) return null;
 
@@ -568,6 +589,8 @@ async function fetchGoogleNewsArticles(): Promise<NewsArticle[]> {
     "aplikasi viral OR teknologi viral OR tools AI",
     "Prabowo OR Jakarta",
     "Timnas Indonesia OR Piala Dunia",
+    "olahraga OR sports OR sepak bola OR football OR NBA OR MotoGP",
+    "film OR musik OR konser OR entertainment OR celebrity OR drama",
     "global news OR world news",
   ];
 
@@ -600,13 +623,13 @@ async function fetchGoogleNewsArticles(): Promise<NewsArticle[]> {
 async function fetchGdeltArticles(): Promise<NewsArticle[]> {
   const now = new Date();
   const start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const query =
+  const query = process.env.GDELT_QUERY ??
     "(Indonesia OR Jakarta OR protest OR demonstration OR accident OR fire OR flood OR earthquake OR bitcoin OR crypto OR AI OR OpenAI OR technology OR economy OR stock OR geopolitics OR football)";
   const url = new URL("https://api.gdeltproject.org/api/v2/doc/doc");
   url.searchParams.set("query", query);
   url.searchParams.set("mode", "artlist");
   url.searchParams.set("format", "json");
-  url.searchParams.set("maxrecords", "50");
+  url.searchParams.set("maxrecords", process.env.GDELT_MAX_RECORDS ?? "50");
   url.searchParams.set("sort", "hybridrel");
   url.searchParams.set("startdatetime", gdeltDate(start));
   url.searchParams.set("enddatetime", gdeltDate(now));
@@ -770,7 +793,8 @@ function extractTopicName(article: NewsArticle) {
 }
 
 function buildTopics(articles: NewsArticle[]) {
-  const seenArticles = new Set<string>();
+  const seenArticleUrls = new Set<string>();
+  const seenArticleTitles = new Set<string>();
   const sourceUsage = new Map<string, number>();
   const sourceLimit = 18;
   const grouped = new Map<
@@ -796,13 +820,20 @@ function buildTopics(articles: NewsArticle[]) {
         return;
       }
 
-      const articleKey = article.url ?? article.title ?? "";
+      const articleUrl = article.url ? canonicalArticleUrl(article.url) : "";
+      const articleTitle = article.title
+        ? `${baseSource}:${normalizedArticleTitle(article.title)}`
+        : "";
 
-      if (seenArticles.has(articleKey)) {
+      if (
+        (articleUrl && seenArticleUrls.has(articleUrl)) ||
+        (articleTitle && seenArticleTitles.has(articleTitle))
+      ) {
         return;
       }
 
-      seenArticles.add(articleKey);
+      if (articleUrl) seenArticleUrls.add(articleUrl);
+      if (articleTitle) seenArticleTitles.add(articleTitle);
       sourceUsage.set(baseSource, currentSourceUsage + 1);
 
       const name = extractTopicName(article);
@@ -832,18 +863,13 @@ function buildTopics(articles: NewsArticle[]) {
     .map((group): Topic => {
       const articleCount = group.articles.length;
       const sourceCount = group.sources.size;
-      const ageHours = Math.max(0, (now - group.newest) / 36e5);
-      // Spread the score across the full band so the radar can actually rank topics:
-      // freshness decays over ~12 hours, volume and source diversity carry the rest.
-      const recencyScore = Math.max(0, 30 - ageHours * 2.5);
-      const volumeScore = Math.min(34, articleCount * 8.5);
-      const diversityScore = Math.min(24, sourceCount * 8);
-      const singleArticlePenalty = articleCount === 1 ? 18 : 0;
-      const score = Math.max(
-        35,
-        Math.min(99, Math.round(12 + recencyScore + volumeScore + diversityScore - singleArticlePenalty)),
-      );
-      const growth = `+${Math.min(380, 80 + articleCount * 45 + sourceCount * 25)}%`;
+      const score = scoreTopic({
+        articleCount,
+        sourceCount,
+        newestPublishedAt: group.newest,
+        now,
+      });
+      const growth = growthLabel({ articleCount, sourceCount });
 
       return {
         id: slugify(group.name),
@@ -864,6 +890,10 @@ function buildTopics(articles: NewsArticle[]) {
           source: article.source?.name ?? "News",
           url: article.url ?? "#",
           publishedAt: article.publishedAt ?? null,
+          description: article.description ?? null,
+          slug: article.title && article.source?.name && isRssSource(article.source.name)
+            ? articleSlug(article.title, article.source.name)
+            : undefined,
         })),
       };
     })
@@ -874,6 +904,8 @@ function buildTopics(articles: NewsArticle[]) {
     Peristiwa: 5,
     Business: 4,
     Crypto: 3,
+    Sports: 3,
+    Entertainment: 3,
     Global: 3,
     Social: 2,
   };

@@ -5,6 +5,8 @@ export type TopicArticle = {
   source: string;
   url: string;
   publishedAt: string | null;
+  description?: string | null;
+  slug?: string;
 };
 
 export type Topic = {

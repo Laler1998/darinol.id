@@ -1,0 +1,243 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AppShell } from "@/components/app-shell";
+import { LatestFeed } from "@/components/latest-feed";
+import { TopicDetail } from "@/components/topic-detail";
+import { TopicList } from "@/components/topic-list";
+import { TrendAgent } from "@/components/trend-agent";
+import { HeroProductVisual } from "@/components/hero-product-visual";
+import { LoadingOverlay } from "@/components/loading-overlay";
+import { AlertIcon, RefreshIcon } from "@/components/icons";
+import { type Language, type MainView, type ThemeMode, copy, cultureCategoryFilters, newsCategoryFilters } from "@/lib/copy";
+import { buildLatestFeed, formatClock } from "@/lib/format";
+import type { RadarFilter, Topic, TrendsPayload } from "@/lib/types";
+
+const CACHE_PREFIX = "darinol-trends-cache-v4";
+const CACHE_TTL_MS = 5 * 60 * 1000;
+type CachedPayload = TrendsPayload & { cachedAt?: number };
+
+type HomeClientProps = { initialPayload: TrendsPayload };
+
+export default function HomeClient({ initialPayload }: HomeClientProps) {
+  const initialRadar = initialPayload.radar_type === "culture" ? "culture" : "news";
+  const [topics, setTopics] = useState<Topic[]>(initialPayload.topics ?? []);
+  const [selectedId, setSelectedId] = useState<string | null>(initialPayload.topics?.[0]?.id ?? null);
+  const [search, setSearch] = useState("");
+  const [activeRadar, setActiveRadar] = useState<RadarFilter>(initialRadar);
+  const [activeCategory, setActiveCategory] = useState("Semua");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [activeView, setActiveView] = useState<MainView>("radar");
+  const [language, setLanguage] = useState<Language>("id");
+  // Dark is the intended premium default; a stored preference still wins.
+  const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
+  const [isMobile, setIsMobile] = useState(false);
+  const [loading, setLoading] = useState(!initialPayload.topics?.length);
+  const [initialOverlay, setInitialOverlay] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [updatedAtIso, setUpdatedAtIso] = useState(initialPayload.updatedAt ?? "");
+  const requestRef = useRef(0);
+  const initialPayloadRef = useRef(initialPayload);
+  const detailRef = useRef<HTMLDivElement | null>(null);
+  const t = copy[language];
+
+  useEffect(() => {
+    const storedLanguage = window.localStorage.getItem("darinol-language");
+    const storedTheme = window.localStorage.getItem("darinol-theme");
+    const storedCategories = window.localStorage.getItem("darinol-category-preferences");
+    if (storedLanguage === "id" || storedLanguage === "en") setLanguage(storedLanguage);
+    if (storedTheme === "light" || storedTheme === "dark") setThemeMode(storedTheme);
+    if (storedCategories) {
+      try {
+        const parsed = JSON.parse(storedCategories);
+        if (Array.isArray(parsed) && parsed.every((category) => typeof category === "string")) {
+          setSelectedCategories(parsed);
+        }
+      } catch {
+        window.localStorage.removeItem("darinol-category-preferences");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", themeMode === "dark");
+    window.localStorage.setItem("darinol-theme", themeMode);
+  }, [themeMode]);
+
+  useEffect(() => {
+    window.localStorage.setItem("darinol-language", language);
+    document.documentElement.lang = language;
+  }, [language]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      "darinol-category-preferences",
+      JSON.stringify(selectedCategories),
+    );
+  }, [selectedCategories]);
+
+  useEffect(() => {
+    if (!loading) setInitialOverlay(false);
+  }, [loading]);
+
+  const applyPayload = useCallback((payload: TrendsPayload) => {
+    if (!payload.topics?.length) return;
+    setTopics(payload.topics);
+    setSelectedId((currentId) => currentId && payload.topics.some((topic) => topic.id === currentId) ? currentId : payload.topics[0].id);
+    setUpdatedAtIso(payload.updatedAt);
+  }, []);
+
+  const loadTrends = useCallback(async (radar: RadarFilter, options: { skipCache?: boolean } = {}) => {
+    const requestId = requestRef.current + 1;
+    requestRef.current = requestId;
+    const cacheKey = `${CACHE_PREFIX}-${radar}`;
+    setLoading(true);
+    setLoadFailed(false);
+
+    if (!options.skipCache) {
+      try {
+        const cachedValue = window.localStorage.getItem(cacheKey);
+        if (cachedValue) {
+          const cached = JSON.parse(cachedValue) as CachedPayload;
+          if (cached.cachedAt && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
+            applyPayload(cached);
+            setLoading(false);
+          }
+        }
+      } catch {
+        window.localStorage.removeItem(cacheKey);
+      }
+    }
+
+    try {
+      const response = await fetch(`/api/trends?radar_type=${radar}`, { cache: options.skipCache ? "no-store" : "default" });
+      const payload = (await response.json()) as TrendsPayload;
+      if (requestRef.current !== requestId) return;
+      if (!payload.topics?.length) throw new Error("Empty trends payload");
+      applyPayload(payload);
+      window.localStorage.setItem(cacheKey, JSON.stringify({ ...payload, cachedAt: Date.now() }));
+    } catch {
+      if (requestRef.current !== requestId) return;
+      setLoadFailed(true);
+    } finally {
+      if (requestRef.current === requestId) setLoading(false);
+    }
+  }, [applyPayload]);
+
+  useEffect(() => {
+    if (activeRadar === initialRadar && initialPayloadRef.current.topics?.length) {
+      try {
+        window.localStorage.setItem(`${CACHE_PREFIX}-${initialRadar}`, JSON.stringify({ ...initialPayloadRef.current, cachedAt: Date.now() }));
+      } catch {
+        // The server-rendered payload remains usable when storage is unavailable.
+      }
+      initialPayloadRef.current = { ...initialPayloadRef.current, topics: [] };
+      return;
+    }
+    void loadTrends(activeRadar);
+  }, [activeRadar, initialRadar, loadTrends]);
+
+  const query = search.trim().toLowerCase();
+  const filteredTopics = useMemo(() => topics.filter((topic) => {
+    const matchesRadar = activeRadar === "all" || topic.radar_type === activeRadar;
+    const searchable = `${topic.name} ${topic.category} ${topic.culture_category ?? ""} ${topic.articles.map((article) => article.title).join(" ")}`.toLowerCase();
+    const matchesSearch = !query || searchable.includes(query);
+    const matchesCategory = activeCategory === "Semua" || topic.category === activeCategory || topic.culture_category === activeCategory;
+    const matchesPreference =
+      selectedCategories.length === 0 ||
+      topic.radar_type === "culture" ||
+      selectedCategories.includes(topic.category);
+    return matchesRadar && matchesSearch && matchesCategory && matchesPreference;
+  }), [activeCategory, activeRadar, query, selectedCategories, topics]);
+
+  const latestFeed = useMemo(() => {
+    const feed = buildLatestFeed(filteredTopics, isMobile ? 40 : 90);
+    if (!query) return feed;
+    return feed.filter((article) => `${article.title} ${article.source} ${article.topicName}`.toLowerCase().includes(query));
+  }, [filteredTopics, isMobile, query]);
+
+  const selectedTopic = filteredTopics.find((topic) => topic.id === selectedId) ?? filteredTopics[0] ?? null;
+  const categoryFilters = useMemo(() => {
+    if (activeRadar !== "culture") return newsCategoryFilters;
+    const availableCategories = new Set(topics.filter((topic) => topic.radar_type === "culture" && topic.culture_category).map((topic) => topic.culture_category as string));
+    return [cultureCategoryFilters[0], ...cultureCategoryFilters.slice(1).filter((category) => availableCategories.has(category))];
+  }, [activeRadar, topics]);
+
+  useEffect(() => {
+    if (!categoryFilters.includes(activeCategory)) setActiveCategory("Semua");
+  }, [activeCategory, categoryFilters]);
+
+  function handleSelectRadar(radar: RadarFilter) {
+    setActiveRadar(radar);
+    setActiveCategory("Semua");
+    setSelectedId(null);
+  }
+
+  function handleCategoryPreferenceChange(category: string) {
+    setSelectedCategories((current) =>
+      current.includes(category)
+        ? current.filter((item) => item !== category)
+        : [...current, category],
+    );
+  }
+
+  function handleResetCategories() {
+    setSelectedCategories([]);
+  }
+
+  function handleSelectTopic(topicId: string) {
+    setSelectedId(topicId);
+    if (isMobile) window.requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  function handleNextTopic() {
+    if (!filteredTopics.length) return;
+    const currentIndex = filteredTopics.findIndex((topic) => topic.id === selectedTopic?.id);
+    setSelectedId(filteredTopics[(currentIndex + 1) % filteredTopics.length].id);
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-[1680px] px-4 pb-12 sm:px-6 lg:px-8 xl:px-10">
+      <a href="#main" className="skip-link">{t.skipToContent}</a>
+      <AppShell search={search} onSearchChange={setSearch} updatedAt={updatedAtIso ? formatClock(updatedAtIso, language) : "—"} onRefresh={() => void loadTrends(activeRadar, { skipCache: true })} refreshing={loading} activeView={activeView} onViewChange={setActiveView} language={language} onLanguageChange={setLanguage} themeMode={themeMode} onThemeToggle={() => setThemeMode((currentTheme) => currentTheme === "dark" ? "light" : "dark")} t={t} />
+
+      {loadFailed ? <div role="alert" className="mx-auto mb-6 flex w-full max-w-[1520px] flex-col gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="flex items-center gap-2 text-sm font-medium text-darinol-text"><AlertIcon className="h-4 w-4 text-rose-600 dark:text-rose-400" />{t.loadFailed}</p>
+        <button type="button" onClick={() => void loadTrends(activeRadar, { skipCache: true })} className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-darinol-primaryFill px-4 text-xs font-semibold text-white transition hover:brightness-105"><RefreshIcon className="h-3.5 w-3.5" />{t.refresh}</button>
+      </div> : null}
+
+      <section className="hero-section" aria-labelledby="hero-title">
+        <div className="hero-copy">
+          <p className="eyebrow-text"><span className="eyebrow-dot" /> Darinol trend intelligence</p>
+          <h1 id="hero-title">{t.heroTitle}</h1>
+          <p className="hero-description">{t.heroBody}</p>
+          <div className="hero-actions">
+            <button type="button" onClick={() => document.getElementById("radar-section")?.scrollIntoView({ behavior: "smooth" })} className="tap-target orange-gradient hero-primary-action">Lihat radar tren <span aria-hidden="true">↗</span></button>
+            <button type="button" onClick={() => setActiveView("latest")} className="tap-target glass-soft hero-secondary-action">{t.readLatest}</button>
+          </div>
+          <button type="button" onClick={() => { handleSelectRadar("culture"); document.getElementById("radar-section")?.scrollIntoView({ behavior: "smooth" }); }} className="tap-target hero-text-action">{t.exploreCulture} <span aria-hidden="true">→</span></button>
+          <div className="hero-proof-row"><span><i /> Data publik terkurasi</span><span><i /> Update berkala</span><span><i /> Insight berbasis sinyal</span></div>
+        </div>
+        <HeroProductVisual />
+      </section>
+
+      <main id="main" className="mx-auto w-full max-w-[1520px]">
+        <div id="radar-section" className="scroll-mt-28" />
+        {activeView === "radar" ? <div className="grid items-start gap-6 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)]">
+        <TopicList topics={filteredTopics} totalCount={filteredTopics.length} selectedTopicId={selectedTopic?.id ?? null} activeRadar={activeRadar} selectedCategories={selectedCategories} onCategoryPreferenceChange={handleCategoryPreferenceChange} onResetCategories={handleResetCategories} onRadarChange={handleSelectRadar} categoryFilters={categoryFilters} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onSelectTopic={handleSelectTopic} loading={loading} search={search} onSearchChange={setSearch} language={language} t={t} />
+        <div ref={detailRef} className="lg:sticky lg:top-32"><TopicDetail topic={selectedTopic} loading={loading} language={language} onNextTopic={handleNextTopic} t={t} /></div>
+      </div> : <LatestFeed articles={latestFeed} loading={loading} language={language} t={t} />}
+      </main>
+      <LoadingOverlay active={loading || initialOverlay} />
+      <TrendAgent topics={filteredTopics} language={language} />
+    </div>
+  );
+}

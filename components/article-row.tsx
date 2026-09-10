@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ExternalIcon } from "./icons";
 import { getCategoryStyle } from "@/lib/categories";
 import { formatRelativeTime } from "@/lib/format";
@@ -24,6 +25,11 @@ export function ArticleRow({
 }) {
   const hasSource = Boolean(article.url) && article.url !== "#";
   const style = getCategoryStyle(categoryLabel ?? "", isCulture);
+  const [relativeTime, setRelativeTime] = useState(language === "id" ? "memuat..." : "loading...");
+
+  useEffect(() => {
+    setRelativeTime(formatRelativeTime(article.publishedAt, language));
+  }, [article.publishedAt, language]);
 
   const content = (
     <>
@@ -47,7 +53,7 @@ export function ArticleRow({
         <span className="truncate">{article.source}</span>
         <span aria-hidden="true">·</span>
         <time dateTime={article.publishedAt ?? undefined} className="tabular-nums">
-          {formatRelativeTime(article.publishedAt, language)}
+          {relativeTime}
         </time>
       </div>
     </>
@@ -63,9 +69,9 @@ export function ArticleRow({
 
   return (
     <a
-      href={article.url}
-      target="_blank"
-      rel="noreferrer"
+      href={article.slug ? `/artikel/${article.slug}?source=${encodeURIComponent(article.url)}` : article.url}
+      target={article.slug ? undefined : "_blank"}
+      rel={article.slug ? undefined : "noreferrer"}
       className="group block rounded-xl border border-darinol-border/60 bg-darinol-surface/40 px-3.5 py-3 transition hover:border-darinol-primary/50 hover:bg-darinol-surface"
     >
       {content}

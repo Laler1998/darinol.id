@@ -15,6 +15,7 @@ const config: Config = {
         darinol: {
           background: "var(--color-background)",
           surface: "var(--color-surface)",
+          surfaceRaised: "var(--color-surface-raised)",
           primary: "#FF7A45",
           primaryFill: "var(--color-primary-fill)",
           primaryInk: "var(--color-primary-ink)",
@@ -25,8 +26,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        heading: ["var(--font-poppins)", "Poppins", "sans-serif"],
-        body: ["var(--font-be-vietnam)", "Be Vietnam Pro", "sans-serif"],
+        heading: ["var(--font-display)", "Space Grotesk", "sans-serif"],
+        body: ["var(--font-text)", "DM Sans", "sans-serif"],
       },
       boxShadow: {
         soft: "0 18px 45px rgba(26, 26, 26, 0.06)",
