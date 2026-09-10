@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ExternalIcon } from "./icons";
 import { getCategoryStyle } from "@/lib/categories";
 import { formatRelativeTime } from "@/lib/format";
@@ -24,6 +25,11 @@ export function ArticleRow({
 }) {
   const hasSource = Boolean(article.url) && article.url !== "#";
   const style = getCategoryStyle(categoryLabel ?? "", isCulture);
+  const [relativeTime, setRelativeTime] = useState(language === "id" ? "memuat..." : "loading...");
+
+  useEffect(() => {
+    setRelativeTime(formatRelativeTime(article.publishedAt, language));
+  }, [article.publishedAt, language]);
 
   const content = (
     <>
@@ -47,7 +53,7 @@ export function ArticleRow({
         <span className="truncate">{article.source}</span>
         <span aria-hidden="true">·</span>
         <time dateTime={article.publishedAt ?? undefined} className="tabular-nums">
-          {formatRelativeTime(article.publishedAt, language)}
+          {relativeTime}
         </time>
       </div>
     </>
