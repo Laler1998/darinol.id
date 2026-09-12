@@ -203,7 +203,7 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
   const highestTopic = filteredTopics[0]?.name ?? "—";
 
   return (
-    <div className="min-h-screen bg-darinol-background lg:grid lg:grid-cols-[224px_minmax(0,1fr)]">
+    <div className="min-h-screen bg-darinol-background">
       <a href="#main" className="skip-link">{t.skipToContent}</a>
       <AppShell search={search} onSearchChange={setSearch} updatedAt={updatedAtIso ? formatClock(updatedAtIso, language) : "—"} onRefresh={() => void loadTrends(activeRadar, { skipCache: true })} refreshing={loading} activeView={activeView} onViewChange={setActiveView} language={language} onLanguageChange={setLanguage} themeMode={themeMode} onThemeToggle={() => setThemeMode((currentTheme) => currentTheme === "dark" ? "light" : "dark")} t={t} />
       <div className="min-w-0 px-4 py-6 sm:px-6 lg:px-10 lg:py-9 xl:px-14">

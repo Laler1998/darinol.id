@@ -1053,3 +1053,11 @@ button {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Dashboard typography: compact enough for data density, with clear reading rhythm. */
+:root { font-synthesis: none; }
+body { font-size: 16px; line-height: 1.5; letter-spacing: -0.008em; }
+.font-heading, h1, h2, h3 { font-family: var(--font-display), "Space Grotesk", sans-serif; letter-spacing: -0.035em; }
+.font-heading { font-weight: 600; }
+p { text-wrap: pretty; }
+@media (max-width: 767px) { body { font-size: 15px; } }
