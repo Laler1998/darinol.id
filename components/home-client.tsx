@@ -6,7 +6,6 @@ import { LatestFeed } from "@/components/latest-feed";
 import { TopicDetail } from "@/components/topic-detail";
 import { TopicList } from "@/components/topic-list";
 import { TrendAgent } from "@/components/trend-agent";
-import { HeroProductVisual } from "@/components/hero-product-visual";
 import { AlertIcon, RefreshIcon } from "@/components/icons";
 import { type Language, type MainView, type ThemeMode, copy, cultureCategoryFilters, newsCategoryFilters } from "@/lib/copy";
 import { buildLatestFeed, formatClock } from "@/lib/format";
@@ -198,38 +197,22 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
     setSelectedId(filteredTopics[(currentIndex + 1) % filteredTopics.length].id);
   }
 
+  const totalArticles = filteredTopics.reduce((total, topic) => total + (topic.total_articles ?? topic.articles.length), 0);
+  const totalSources = filteredTopics.reduce((total, topic) => total + (topic.total_sources ?? new Set(topic.articles.map((article) => article.source)).size), 0);
+  const highestScore = filteredTopics[0]?.culture_score ?? filteredTopics[0]?.score ?? 0;
+  const highestTopic = filteredTopics[0]?.name ?? "—";
+
   return (
-    <div className="mx-auto w-full max-w-[1680px] px-4 pb-12 sm:px-6 lg:px-8 xl:px-10">
+    <div className="min-h-screen bg-darinol-background lg:grid lg:grid-cols-[224px_minmax(0,1fr)]">
       <a href="#main" className="skip-link">{t.skipToContent}</a>
       <AppShell search={search} onSearchChange={setSearch} updatedAt={updatedAtIso ? formatClock(updatedAtIso, language) : "—"} onRefresh={() => void loadTrends(activeRadar, { skipCache: true })} refreshing={loading} activeView={activeView} onViewChange={setActiveView} language={language} onLanguageChange={setLanguage} themeMode={themeMode} onThemeToggle={() => setThemeMode((currentTheme) => currentTheme === "dark" ? "light" : "dark")} t={t} />
-
-      {loadFailed ? <div role="alert" className="mx-auto mb-6 flex w-full max-w-[1520px] flex-col gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="flex items-center gap-2 text-sm font-medium text-darinol-text"><AlertIcon className="h-4 w-4 text-rose-600 dark:text-rose-400" />{t.loadFailed}</p>
-        <button type="button" onClick={() => void loadTrends(activeRadar, { skipCache: true })} className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-darinol-primaryFill px-4 text-xs font-semibold text-white transition hover:brightness-105"><RefreshIcon className="h-3.5 w-3.5" />{t.refresh}</button>
-      </div> : null}
-
-      <section className="hero-section" aria-labelledby="hero-title">
-        <div className="hero-copy">
-          <p className="eyebrow-text"><span className="eyebrow-dot" /> Darinol trend intelligence</p>
-          <h1 id="hero-title">{t.heroTitle}</h1>
-          <p className="hero-description">{t.heroBody}</p>
-          <div className="hero-actions">
-            <button type="button" onClick={() => document.getElementById("radar-section")?.scrollIntoView({ behavior: "smooth" })} className="tap-target orange-gradient hero-primary-action">Lihat radar tren <span aria-hidden="true">↗</span></button>
-            <button type="button" onClick={() => setActiveView("latest")} className="tap-target glass-soft hero-secondary-action">{t.readLatest}</button>
-          </div>
-          <button type="button" onClick={() => { handleSelectRadar("culture"); document.getElementById("radar-section")?.scrollIntoView({ behavior: "smooth" }); }} className="tap-target hero-text-action">{t.exploreCulture} <span aria-hidden="true">→</span></button>
-          <div className="hero-proof-row"><span><i /> Data publik terkurasi</span><span><i /> Update berkala</span><span><i /> Insight berbasis sinyal</span></div>
-        </div>
-        <HeroProductVisual />
-      </section>
-
-      <main id="main" className="mx-auto w-full max-w-[1520px]">
-        <div id="radar-section" className="scroll-mt-28" />
-        {activeView === "radar" ? <div className="grid items-start gap-6 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)]">
-        <TopicList topics={filteredTopics} totalCount={filteredTopics.length} selectedTopicId={selectedTopic?.id ?? null} activeRadar={activeRadar} selectedCategories={selectedCategories} onCategoryPreferenceChange={handleCategoryPreferenceChange} onResetCategories={handleResetCategories} onRadarChange={handleSelectRadar} categoryFilters={categoryFilters} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onSelectTopic={handleSelectTopic} loading={loading} search={search} onSearchChange={setSearch} language={language} t={t} />
-        <div ref={detailRef} className="lg:sticky lg:top-32"><TopicDetail topic={selectedTopic} loading={loading} language={language} onNextTopic={handleNextTopic} t={t} /></div>
-      </div> : <LatestFeed articles={latestFeed} loading={loading} language={language} t={t} />}
-      </main>
+      <div className="min-w-0 px-4 py-6 sm:px-6 lg:px-10 lg:py-9 xl:px-14">
+        {loadFailed ? <div role="alert" className="mb-6 flex flex-col gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><p className="flex items-center gap-2 text-sm font-medium text-darinol-text"><AlertIcon className="h-4 w-4 text-rose-600 dark:text-rose-400" />{t.loadFailed}</p><button type="button" onClick={() => void loadTrends(activeRadar, { skipCache: true })} className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-darinol-primaryFill px-4 text-xs font-semibold text-white"><RefreshIcon className="h-3.5 w-3.5" />{t.refresh}</button></div> : null}
+        <main id="main" className="mx-auto w-full max-w-[1440px]">
+          <header className="border-b border-darinol-border/70 pb-6"><div className="flex flex-col justify-between gap-5 md:flex-row md:items-center"><div><p className="text-xs font-medium text-darinol-muted">Darinol / <span className="text-darinol-text">{activeView === "radar" ? t.radarTab : t.latestTab}</span></p><h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight text-darinol-text sm:text-4xl">{activeView === "radar" ? "Sinyal tren hari ini" : t.latestTab}</h1></div><label className="relative hidden w-full max-w-sm lg:block"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-darinol-muted">⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t.search} aria-label={t.search} className="h-10 w-full rounded-lg border border-darinol-border bg-darinol-surface pl-9 pr-3 text-sm text-darinol-text placeholder:text-darinol-muted focus:border-darinol-primary focus:outline-none focus:ring-2 focus:ring-darinol-primary/25" /></label></div></header>
+          {activeView === "radar" ? <><section className="grid gap-3 py-6 sm:grid-cols-3" aria-label="Ringkasan radar"><div className="rounded-xl border border-darinol-border/70 bg-darinol-surface p-4"><p className="text-xs font-medium text-darinol-muted">Skor tertinggi</p><p className="mt-2 font-heading text-3xl font-semibold tabular-nums text-darinol-primaryInk">{highestScore}</p><p className="mt-1 text-xs text-darinol-muted">{highestTopic}</p></div><div className="rounded-xl border border-darinol-border/70 bg-darinol-surface p-4"><p className="text-xs font-medium text-darinol-muted">Sumber aktif</p><p className="mt-2 font-heading text-3xl font-semibold tabular-nums text-darinol-text">{totalSources}</p><p className="mt-1 text-xs text-darinol-success">Dari topik yang terpantau</p></div><div className="rounded-xl border border-darinol-border/70 bg-darinol-surface p-4"><p className="text-xs font-medium text-darinol-muted">Berita masuk</p><p className="mt-2 font-heading text-3xl font-semibold tabular-nums text-darinol-text">{totalArticles}</p><p className="mt-1 text-xs text-darinol-muted">Update berkala</p></div></section><section id="radar-section" className="scroll-mt-6"><div className="mb-4 flex items-center justify-between gap-4"><div><h2 className="font-heading text-xl font-semibold text-darinol-text">Radar topik</h2><p className="mt-1 text-sm text-darinol-muted">Pilih sinyal untuk melihat berita dan sumber terkait.</p></div><span className="hidden text-xs font-semibold text-darinol-primaryInk sm:block">{filteredTopics.length} sinyal terpantau</span></div><div className="grid items-start gap-5 lg:grid-cols-[340px_minmax(0,1fr)]"><TopicList topics={filteredTopics} totalCount={filteredTopics.length} selectedTopicId={selectedTopic?.id ?? null} activeRadar={activeRadar} selectedCategories={selectedCategories} onCategoryPreferenceChange={handleCategoryPreferenceChange} onResetCategories={handleResetCategories} onRadarChange={handleSelectRadar} categoryFilters={categoryFilters} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onSelectTopic={handleSelectTopic} loading={loading} search={search} onSearchChange={setSearch} language={language} t={t} /><div ref={detailRef} className="lg:sticky lg:top-7"><TopicDetail topic={selectedTopic} loading={loading} language={language} onNextTopic={handleNextTopic} t={t} /></div></div></section></> : <section className="pt-6"><LatestFeed articles={latestFeed} loading={loading} language={language} t={t} /></section>}
+        </main>
+      </div>
       <TrendAgent topics={filteredTopics} language={language} />
     </div>
   );

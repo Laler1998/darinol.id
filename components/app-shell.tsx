@@ -1,27 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { MoonIcon, RefreshIcon, SearchIcon, SunIcon } from "./icons";
-import { SegmentedTabs } from "./segmented-tabs";
+import { ClockIcon, MoonIcon, RefreshIcon, SearchIcon, SunIcon, TrendIcon } from "./icons";
 import type { Copy, Language, MainView, ThemeMode } from "@/lib/copy";
 
-/**
- * Compact sticky chrome. Navigation and refresh stay reachable from any scroll
- * depth, which is the main reason the old full-height header was replaced.
- */
 export function AppShell({
-  search,
-  onSearchChange,
-  updatedAt,
-  onRefresh,
-  refreshing,
-  activeView,
-  onViewChange,
-  language,
-  onLanguageChange,
-  themeMode,
-  onThemeToggle,
-  t,
+  search, onSearchChange, updatedAt, onRefresh, refreshing, activeView, onViewChange,
+  language, onLanguageChange, themeMode, onThemeToggle, t,
 }: {
   search: string;
   onSearchChange: (value: string) => void;
@@ -36,89 +21,54 @@ export function AppShell({
   onThemeToggle: () => void;
   t: Copy;
 }) {
-  return (
-    <div className="app-shell sticky top-0 z-40 mx-auto mb-8 w-full max-w-[1520px] px-3 pt-3 sm:px-5 lg:px-7">
-      <div className="app-shell-inner mx-auto flex min-h-14 w-full items-center gap-3 rounded-2xl border border-white/60 bg-white/55 px-3 shadow-[0_16px_42px_rgba(26,26,26,0.07)] backdrop-blur-xl sm:px-4">
-        {/* Brand mark, not a link: it used to jump to #main, duplicating the
-            skip link and adding a tab stop that did nothing useful. */}
-        <p className="flex h-9 items-center gap-2.5">
-          <Image
-            src="/darinol-wordmark.png"
-            alt="Darinol.id"
-            width={270}
-            height={90}
-            className="h-8 w-auto object-contain"
-          />
-        </p>
+  const navigation = [
+    { id: "radar" as const, label: t.radarTab, Icon: TrendIcon },
+    { id: "latest" as const, label: t.latestTab, Icon: ClockIcon },
+  ];
 
-        <label className="relative ml-auto hidden min-w-0 flex-1 md:block md:max-w-sm">
-          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-darinol-muted">
-            <SearchIcon />
-          </span>
-          <input
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder={t.search}
-            aria-label={t.search}
-            className="h-9 w-full rounded-full border border-darinol-border bg-darinol-surface/70 pl-10 pr-3 text-sm text-darinol-text transition placeholder:text-darinol-muted hover:border-darinol-primary/40 focus:border-darinol-primary focus:outline-none focus:ring-2 focus:ring-darinol-primary/25"
-          />
-        </label>
-
-        <div className="ml-auto flex items-center gap-1.5 md:ml-0">
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={refreshing}
-            aria-label={refreshing ? t.refreshing : t.refresh}
-            className="tap-target flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-full border border-darinol-border bg-darinol-surface/70 px-3 text-xs font-semibold text-darinol-text transition hover:border-darinol-primary/50 hover:text-darinol-primaryInk disabled:cursor-wait disabled:opacity-60"
-          >
-            <RefreshIcon className={refreshing ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
-            <span className="hidden lg:inline">{refreshing ? t.refreshing : t.refresh}</span>
-          </button>
-
-          <div
-            role="group"
-            aria-label={t.languageSwitcher}
-            className="flex h-9 rounded-full border border-darinol-border bg-darinol-surface/70 p-0.5"
-          >
-            {(["id", "en"] as const).map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => onLanguageChange(item)}
-                aria-pressed={language === item}
-                className={[
-                  "tap-target h-8 min-w-11 rounded-full text-xs font-semibold transition",
-                  language === item
-                    ? "bg-darinol-primaryFill text-white"
-                    : "text-darinol-muted hover:text-darinol-text",
-                ].join(" ")}
-              >
-                {item.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            onClick={onThemeToggle}
-            aria-label={themeMode === "dark" ? t.light : t.dark}
-            className="tap-target grid h-9 w-9 place-items-center rounded-full border border-darinol-border bg-darinol-surface/70 text-darinol-muted transition hover:border-darinol-primary/50 hover:text-darinol-primaryInk"
-          >
-            {themeMode === "dark" ? <SunIcon /> : <MoonIcon />}
-          </button>
-        </div>
-      </div>
-
-      <div className="mx-auto flex w-full items-center justify-between gap-3 px-1 pt-3 sm:px-2">
-        <SegmentedTabs activeView={activeView} onChange={onViewChange} t={t} />
-        <p
-          className="hidden shrink-0 text-[11px] font-medium text-darinol-muted sm:block"
-          aria-live="polite"
-        >
-          {t.update} {updatedAt}
-        </p>
-      </div>
+  const controls = (
+    <div className="flex items-center gap-1.5">
+      <button type="button" onClick={onRefresh} disabled={refreshing} aria-label={refreshing ? t.refreshing : t.refresh} className="tap-target grid h-9 w-9 place-items-center rounded-lg border border-darinol-border bg-darinol-surface text-darinol-muted transition hover:border-darinol-primary/50 hover:text-darinol-primaryInk disabled:cursor-wait disabled:opacity-60">
+        <RefreshIcon className={refreshing ? "animate-spin" : ""} />
+      </button>
+      <button type="button" onClick={onThemeToggle} aria-label={themeMode === "dark" ? t.light : t.dark} className="tap-target grid h-9 w-9 place-items-center rounded-lg border border-darinol-border bg-darinol-surface text-darinol-muted transition hover:border-darinol-primary/50 hover:text-darinol-primaryInk">
+        {themeMode === "dark" ? <SunIcon /> : <MoonIcon />}
+      </button>
     </div>
+  );
+
+  return (
+    <>
+      <aside className="dashboard-sidebar hidden min-h-screen flex-col lg:sticky lg:top-0 lg:h-screen border-r border-darinol-border/70 bg-darinol-surface/70 px-3 py-5 lg:flex">
+        <div className="flex items-center px-2">
+          <Image src="/darinol-wordmark.png" alt="Darinol.id" width={270} height={90} className="h-8 w-auto object-contain" priority />
+        </div>
+        <nav className="mt-9" aria-label="Menu utama">
+          <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-darinol-muted">Menu</p>
+          <div className="space-y-1">
+            {navigation.map(({ id, label, Icon }) => {
+              const active = id === activeView;
+              return <button key={id} type="button" onClick={() => onViewChange(id)} aria-pressed={active} className={["flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-semibold transition", active ? "bg-darinol-primary/15 text-darinol-primaryInk" : "text-darinol-muted hover:bg-darinol-primary/8 hover:text-darinol-text"].join(" ")}><Icon className="h-4 w-4" />{label}</button>;
+            })}
+          </div>
+        </nav>
+        <div className="mt-8 border-t border-darinol-border/60 pt-5">
+          <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-darinol-muted">Status</p>
+          <p className="flex items-center gap-2 px-3 text-xs font-medium text-darinol-muted"><span className="h-2 w-2 rounded-full bg-darinol-success" />{t.update} {updatedAt}</p>
+        </div>
+        <div className="mt-auto space-y-3 px-1">
+          <div role="group" aria-label={t.languageSwitcher} className="flex rounded-lg border border-darinol-border bg-darinol-surface p-0.5">
+            {(["id", "en"] as const).map((item) => <button key={item} type="button" onClick={() => onLanguageChange(item)} aria-pressed={language === item} className={["h-8 flex-1 rounded-md text-xs font-bold", language === item ? "bg-darinol-primaryFill text-white" : "text-darinol-muted"].join(" ")}>{item.toUpperCase()}</button>)}
+          </div>
+          {controls}
+        </div>
+      </aside>
+
+      <header className="sticky top-0 z-40 border-b border-darinol-border/70 bg-darinol-background/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="flex items-center justify-between gap-3"><Image src="/darinol-wordmark.png" alt="Darinol.id" width={270} height={90} className="h-7 w-auto object-contain" priority />{controls}</div>
+        <div className="mt-3 flex gap-1 overflow-x-auto" role="group" aria-label={t.viewSwitcher}>{navigation.map(({ id, label, Icon }) => { const active = id === activeView; return <button key={id} type="button" onClick={() => onViewChange(id)} aria-pressed={active} className={["tap-target flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-bold", active ? "bg-darinol-primaryFill text-white" : "border border-darinol-border bg-darinol-surface text-darinol-muted"].join(" ")}><Icon className="h-4 w-4" />{label}</button>; })}</div>
+        <label className="relative mt-3 block"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-darinol-muted"><SearchIcon /></span><input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder={t.search} aria-label={t.search} className="h-10 w-full rounded-lg border border-darinol-border bg-darinol-surface pl-9 pr-3 text-sm text-darinol-text placeholder:text-darinol-muted focus:border-darinol-primary focus:outline-none focus:ring-2 focus:ring-darinol-primary/25" /></label>
+      </header>
+    </>
   );
 }
