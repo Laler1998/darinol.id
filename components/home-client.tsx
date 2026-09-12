@@ -7,7 +7,6 @@ import { TopicDetail } from "@/components/topic-detail";
 import { TopicList } from "@/components/topic-list";
 import { TrendAgent } from "@/components/trend-agent";
 import { HeroProductVisual } from "@/components/hero-product-visual";
-import { LoadingOverlay } from "@/components/loading-overlay";
 import { AlertIcon, RefreshIcon } from "@/components/icons";
 import { type Language, type MainView, type ThemeMode, copy, cultureCategoryFilters, newsCategoryFilters } from "@/lib/copy";
 import { buildLatestFeed, formatClock } from "@/lib/format";
@@ -33,7 +32,6 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
   const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
   const [isMobile, setIsMobile] = useState(false);
   const [loading, setLoading] = useState(!initialPayload.topics?.length);
-  const [initialOverlay, setInitialOverlay] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [updatedAtIso, setUpdatedAtIso] = useState(initialPayload.updatedAt ?? "");
   const requestRef = useRef(0);
@@ -83,10 +81,6 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
       JSON.stringify(selectedCategories),
     );
   }, [selectedCategories]);
-
-  useEffect(() => {
-    if (!loading) setInitialOverlay(false);
-  }, [loading]);
 
   const applyPayload = useCallback((payload: TrendsPayload) => {
     if (!payload.topics?.length) return;
@@ -236,7 +230,6 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
         <div ref={detailRef} className="lg:sticky lg:top-32"><TopicDetail topic={selectedTopic} loading={loading} language={language} onNextTopic={handleNextTopic} t={t} /></div>
       </div> : <LatestFeed articles={latestFeed} loading={loading} language={language} t={t} />}
       </main>
-      <LoadingOverlay active={loading || initialOverlay} />
       <TrendAgent topics={filteredTopics} language={language} />
     </div>
   );

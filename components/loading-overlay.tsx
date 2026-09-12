@@ -1,112 +1,21 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
-
-const MINIMUM_DISPLAY_MS = 4200;
-
+/**
+ * Lightweight route fallback. It deliberately contains no media so navigation
+ * never waits for a video download or decode before meaningful UI is visible.
+ */
 export function LoadingOverlay({ active }: { active: boolean }) {
-  const [visible, setVisible] = useState(active);
-  const [isDark, setIsDark] = useState(true);
-  const [fallback, setFallback] = useState(false);
-  const [animationEnded, setAnimationEnded] = useState(false);
-  const [minimumElapsed, setMinimumElapsed] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-
-  useEffect(() => {
-    const updateTheme = () => setIsDark(document.documentElement.classList.contains("dark"));
-    const observer = new MutationObserver(updateTheme);
-
-    updateTheme();
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!videoRef.current || fallback) return;
-
-    videoRef.current.load();
-    void videoRef.current.play().catch(() => setFallback(true));
-  }, [isDark, fallback]);
-
-  useEffect(() => {
-    if (active) {
-      setVisible(true);
-      setFallback(false);
-      setAnimationEnded(false);
-      setMinimumElapsed(false);
-      return;
-    }
-
-    if (!animationEnded || !minimumElapsed) return;
-
-    const timeout = window.setTimeout(() => setVisible(false), 420);
-    return () => window.clearTimeout(timeout);
-  }, [active, animationEnded, minimumElapsed]);
-
-  useEffect(() => {
-    if (!visible) return;
-
-    const timeout = window.setTimeout(() => setMinimumElapsed(true), MINIMUM_DISPLAY_MS);
-    return () => window.clearTimeout(timeout);
-  }, [visible]);
-
-  useEffect(() => {
-    if (!active && fallback) setAnimationEnded(true);
-  }, [active, fallback]);
-
-  if (!visible) return null;
-
-  const leaving = !active && animationEnded && minimumElapsed;
+  if (!active) return null;
 
   return (
-    <div className={`loading-overlay ${leaving ? "loading-overlay-leaving" : "loading-overlay-active"}`} aria-live="polite" aria-busy={!leaving}>
-      <div className="loading-overlay-stage">
-        {fallback ? (
-          <div className="loading-fallback" role="status">
-            <Image src="/darinol-wordmark.png" alt="Darinol" width={540} height={180} priority />
-            <div className="loading-fallback-lines" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </div>
-            <span className="sr-only">Mengambil sinyal tren terbaru</span>
-          </div>
-        ) : (
-          <video
-            ref={videoRef}
-            className={`loading-video ${isDark ? "loading-video-dark" : "loading-video-light"}`}
-            autoPlay
-            loop={false}
-            muted
-            playsInline
-            preload="auto"
-            onLoadedData={() => {
-              void videoRef.current?.play().catch(() => setFallback(true));
-            }}
-            onError={() => {
-              setFallback(true);
-              if (!active) setAnimationEnded(true);
-            }}
-            onPause={() => {
-              if (active && videoRef.current) {
-                void videoRef.current.play().catch(() => setFallback(true));
-              }
-            }}
-            onEnded={() => {
-              if (active && videoRef.current) {
-                videoRef.current.currentTime = 0;
-                void videoRef.current.play();
-                return;
-              }
-
-              setAnimationEnded(true);
-            }}
-            aria-label="Animasi logo Darinol"
-          >
-            <source src={isDark ? "/darinol-loading.mp4" : "/darinol-loading-light.mp4"} type="video/mp4" />
-          </video>
-        )}
+    <div className="loading-overlay loading-overlay-active" role="status" aria-live="polite" aria-label="Memuat konten">
+      <div className="loading-overlay-stage w-full max-w-md p-5">
+        <div className="w-full space-y-4 rounded-3xl border border-darinol-border/60 bg-darinol-surface/80 p-5">
+          <span className="skeleton block h-5 w-36 rounded" />
+          <span className="skeleton block h-32 rounded-2xl" />
+          <span className="skeleton block h-4 w-4/5 rounded" />
+          <span className="skeleton block h-4 w-3/5 rounded" />
+        </div>
       </div>
     </div>
   );
