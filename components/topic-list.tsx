@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronRightIcon, SearchIcon } from "./icons";
 import { TopicRow } from "./topic-row";
 import { TopicRowSkeleton } from "./skeletons";
@@ -61,6 +61,8 @@ export function TopicList({
     (category) => category !== "Semua" && !primaryCategories.includes(category),
   );
   const isNewsCategorySet = activeRadar !== "culture";
+  const [showAllTopics, setShowAllTopics] = useState(false);
+  const visibleTopics = showAllTopics ? topics : topics.slice(0, 10);
 
   // The chip strip scrolls horizontally, so the active filter can end up off
   // screen — keep it visible or the user cannot tell what is filtered.
@@ -299,7 +301,7 @@ export function TopicList({
         sticky sidebar. Capping it on mobile created a scroll trap: the page and
         the list competed for the same drag.
       */}
-      <div className="space-y-1 p-3 lg:max-h-[calc(100dvh-18rem)] lg:overflow-y-auto">
+      <div className="grid gap-2 p-3 sm:grid-cols-2 xl:grid-cols-3">
         {showSkeleton ? (
           <TopicRowSkeleton count={8} t={t} />
         ) : totalCount === 0 ? (
@@ -308,7 +310,7 @@ export function TopicList({
             <p className="mt-1.5 text-xs text-darinol-muted">{t.noTopicBody}</p>
           </div>
         ) : (
-          topics.map((topic, index) => (
+          visibleTopics.map((topic, index) => (
             <TopicRow
               key={topic.id}
               topic={topic}
@@ -320,7 +322,13 @@ export function TopicList({
             />
           ))
         )}
-      </div>
+      </div>      {!showSkeleton && totalCount > 10 ? (
+        <div className="border-t border-darinol-border/60 px-3 py-3">
+          <button type="button" onClick={() => setShowAllTopics((current) => !current)} className="w-full rounded-lg border border-darinol-border bg-darinol-surface/70 px-3 py-2.5 text-xs font-bold text-darinol-primaryInk transition hover:border-darinol-primary/50">
+            {showAllTopics ? "Sembunyikan sinyal tambahan" : `Lihat ${totalCount - 10} sinyal lainnya`}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }
