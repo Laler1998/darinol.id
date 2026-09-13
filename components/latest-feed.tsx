@@ -43,8 +43,8 @@ export function LatestFeed({
           <ArticleRowSkeleton count={8} t={t} />
         ) : groups.length ? (
           <div className="space-y-6">
-            {groups.map((group) => (
-              <div key={group.label}>
+            {groups.map((group, groupIndex) => (
+              <div key={group.label} className="feed-group-enter" style={{ animationDelay: `${groupIndex * 55}ms` }}>
                 <div className="mb-2.5 flex items-center gap-3">
                   <h3 className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-darinol-primaryInk">
                     {group.label}
@@ -55,14 +55,15 @@ export function LatestFeed({
                   </span>
                 </div>
                 <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-                  {group.articles.map((article) => (
-                    <ArticleRow
-                      key={`${article.topicId}-${article.url}`}
-                      article={article}
-                      categoryLabel={article.category}
-                      isCulture={article.radarType === "culture"}
-                      language={language}
-                    />
+                  {group.articles.map((article, articleIndex) => (
+                    <div className="feed-item-enter" key={`${article.topicId}-${article.url}`} style={{ animationDelay: `${groupIndex * 55 + articleIndex * 28}ms` }}>
+                      <ArticleRow
+                        article={article}
+                        categoryLabel={article.category}
+                        isCulture={article.radarType === "culture"}
+                        language={language}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>

@@ -1,6 +1,6 @@
 export type Language = "id" | "en";
 export type ThemeMode = "light" | "dark";
-export type MainView = "radar" | "latest";
+export type MainView = "radar" | "latest" | "culture";
 
 export const copy = {
   id: {
@@ -31,8 +31,8 @@ export const copy = {
     radarTab: "Radar Tren",
     latestTab: "Berita Terbaru",
     trendScore: "Skor Tren",
-    cultureScore: "Culture Score",
-    opportunityScore: "Opportunity Score",
+    cultureScore: "Skor Sosial",
+    opportunityScore: "Skor Peluang",
     cultureSample: "Data sampel",
     whyTrending: "Mengapa topik ini bergerak",
     relatedNews: "Berita dan sumber terkait",

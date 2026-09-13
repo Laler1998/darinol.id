@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ExternalIcon } from "./icons";
 import { getCategoryStyle } from "@/lib/categories";
 import { formatRelativeTime } from "@/lib/format";
+import { trackFunnel } from "@/lib/analytics";
 import type { Language } from "@/lib/copy";
 import type { TopicArticle } from "@/lib/types";
 
@@ -43,7 +44,7 @@ export function ArticleRow({
           <ExternalIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-darinol-muted/50 transition group-hover:text-darinol-primaryInk" />
         ) : null}
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium text-darinol-muted">
+      <div className="article-meta mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium text-darinol-muted">
         {categoryLabel ? (
           <span
             className={[
@@ -76,6 +77,7 @@ export function ArticleRow({
       href={article.slug ? `/artikel/${article.slug}?source=${encodeURIComponent(article.url)}` : article.url}
       target={article.slug ? undefined : "_blank"}
       rel={article.slug ? undefined : "noreferrer"}
+      onClick={() => trackFunnel("source_opened", { source: sourceName, category: categoryLabel ?? "unknown", is_culture: isCulture })}
       className="group block rounded-xl border border-darinol-border/60 bg-darinol-surface/40 px-3.5 py-3 transition hover:border-darinol-primary/50 hover:bg-darinol-surface"
     >
       {content}

@@ -19,7 +19,7 @@ export async function GET() {
     topics: payload.topics,
   }, {
     headers: {
-      "Cache-Control": "no-store",
+      "Cache-Control": "public, s-maxage=180, stale-while-revalidate=600",
     },
   });
 }

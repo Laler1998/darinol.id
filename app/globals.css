@@ -1264,3 +1264,265 @@ body { font-size: 16px; line-height: 1.5; letter-spacing: -0.008em; }
 .font-heading { font-weight: 600; }
 p { text-wrap: pretty; }
 @media (max-width: 767px) { body { font-size: 15px; } }
+
+/* Focused dark hierarchy: one signal gets the visual emphasis, supporting UI stays quiet. */
+.dark {
+  --color-surface: #171a1d;
+  --color-surface-raised: #20252a;
+}
+
+.dark body {
+  background: linear-gradient(180deg, #101213 0%, #121416 58%, #15120f 100%), var(--background);
+}
+
+.dark .glass-card,
+.dark .glass-soft,
+.dark .topic-detail-shell {
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.dark section[aria-label="Ringkasan radar"] > div,
+.dark section[aria-label="Ringkasan radar"] > div:not(:first-child) {
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: none;
+}
+
+.dark section[aria-label="Ringkasan radar"] > div:first-child,
+.dark .trend-card-rank1 {
+  background: linear-gradient(145deg, rgba(255, 122, 69, 0.16), rgba(255, 122, 69, 0.035)), var(--color-surface);
+  border-color: rgba(255, 150, 105, 0.34);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24);
+}
+
+.dark .trend-card:not(.trend-card-rank1) {
+  background: var(--color-surface);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+@media (max-width: 767px) {
+  .sticky.top-0 > div:first-child { min-height: 3.5rem; padding-left: 1rem; padding-right: 1rem; }
+  .sticky.top-0 > div.md\\:hidden { padding-top: 0.45rem; padding-bottom: 0.45rem; }
+  .sticky.top-0 > div.md\\:hidden nav button { height: 2rem; padding-left: 0.65rem; padding-right: 0.65rem; }
+  .sticky.top-0 > div.md\\:hidden nav button svg { width: 0.85rem; height: 0.85rem; }
+  section[aria-label="Ringkasan radar"] { gap: 0.55rem; padding-top: 1.25rem; padding-bottom: 1.25rem; }
+  section[aria-label="Ringkasan radar"] > div { min-height: 0; padding: 0.85rem; }
+  section[aria-label="Ringkasan radar"] > div p:nth-child(2) { margin-top: 0.35rem; font-size: 1.6rem; }
+  #radar-section > .space-y-5 { gap: 1.1rem; }
+}
+
+/* Dark theme reset: a single neutral charcoal system, not a tinted glass variant. */
+.dark {
+  --background: #0b0d0f;
+  --foreground: #f4f6f8;
+  --color-background: #0b0d0f;
+  --color-surface: #12161a;
+  --color-surface-raised: #1a2026;
+  --color-text: #f4f6f8;
+  --color-muted: #98a4b1;
+  --color-border: 46 55 64;
+  --color-primary-fill: #d95728;
+  --color-primary-ink: #ffb291;
+}
+
+.dark body,
+.dark .min-h-screen {
+  background: var(--color-background);
+}
+
+.dark body::before,
+.dark body::after {
+  display: none;
+}
+
+.dark .sticky.top-0,
+.dark .sticky.top-16 {
+  background: rgb(11 13 15 / 0.96);
+  border-color: rgb(var(--color-border) / 0.72);
+}
+
+.dark .glass-card,
+.dark .glass-soft,
+.dark .topic-detail-shell,
+.dark .trend-card,
+.dark .trend-card:not(.trend-card-rank1) {
+  background: var(--color-surface);
+  border-color: rgb(var(--color-border) / 0.9);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.dark .topic-detail-shell,
+.dark .trend-card-rank1,
+.dark section[aria-label="Ringkasan radar"] > div:first-child {
+  background: var(--color-surface-raised);
+  border-color: rgb(217 87 40 / 0.52);
+  box-shadow: inset 3px 0 0 var(--color-primary-fill);
+}
+
+.dark section[aria-label="Ringkasan radar"] > div,
+.dark section[aria-label="Ringkasan radar"] > div:not(:first-child) {
+  background: var(--color-surface);
+  border-color: rgb(var(--color-border) / 0.8);
+  box-shadow: none;
+}
+
+.dark input,
+.dark button.bg-darinol-surface,
+.dark .bg-darinol-surface\/40,
+.dark .bg-darinol-surface\/50,
+.dark .bg-darinol-surface\/60,
+.dark .bg-darinol-surface\/70,
+.dark .bg-darinol-surface\/80 {
+  background-color: #101419;
+}
+
+.dark .topic-detail-shell a,
+.dark .topic-detail-shell details,
+.dark .topic-detail-shell p.rounded-xl {
+  background: #0f1317;
+  border-color: rgb(var(--color-border) / 0.78);
+}
+
+.dark .trend-card:hover,
+.dark .topic-detail-shell a:hover,
+.dark button:hover {
+  border-color: rgb(255 178 145 / 0.58);
+}
+
+.dark .orange-gradient,
+.dark .bg-darinol-primaryFill {
+  background-image: none;
+  background-color: var(--color-primary-fill);
+  box-shadow: none;
+}
+
+.dark .text-darinol-primaryInk { color: var(--color-primary-ink); }
+.dark .text-darinol-success { color: #6fd49b; }
+.dark .border-darinol-border { border-color: rgb(var(--color-border) / 1); }
+
+.page-view-enter {
+  animation: page-view-enter 200ms ease-out both;
+}
+
+@keyframes page-view-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-view-enter { animation: none; }
+}
+
+/* Mobile navigation reads as one clear three-destination tab bar. */
+@media (max-width: 767px) {
+  .mobile-primary-nav {
+    gap: 0.25rem;
+    overflow: visible;
+  }
+
+  .mobile-primary-nav button {
+    min-width: 0;
+    flex: 1 1 0;
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0.42rem;
+    font-size: 0.63rem;
+    line-height: 1.1;
+    text-align: center;
+  }
+
+  .mobile-primary-nav button svg { display: none; }
+  .mobile-primary-nav button[aria-pressed="true"] { box-shadow: inset 0 -2px 0 rgba(255,255,255,0.82); }
+}
+
+/* The signal list comes before supporting metrics: decide first, inspect numbers second. */
+.dashboard-summary {
+  margin-top: 1.25rem;
+}
+
+.dashboard-summary section[aria-label="Ringkasan radar"] {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+[data-page="culture"] .dashboard-summary section[aria-label="Ringkasan radar"] > div:first-child {
+  box-shadow: inset 3px 0 0 #b978ff;
+  border-color: rgb(185 120 255 / 0.5);
+}
+
+[data-page="culture"] .dashboard-summary section[aria-label="Ringkasan radar"] > div:first-child p:nth-child(2) {
+  color: #d6b4ff;
+}
+
+/* Filter reads as a compact control, not another content section. */
+.sticky.top-16 {
+  border-top-color: transparent;
+  box-shadow: 0 8px 18px rgb(0 0 0 / 0.05);
+}
+
+.filter-label {
+  display: grid;
+  gap: 0.05rem;
+  min-width: 4.6rem;
+}
+
+.sticky.top-16 .overflow-x-auto {
+  gap: 0.4rem;
+}
+
+.sticky.top-16 .overflow-x-auto button {
+  height: 2rem;
+  padding-inline: 0.7rem;
+  border-radius: 0.55rem;
+}
+
+.dark .sticky.top-16 {
+  box-shadow: 0 8px 18px rgb(0 0 0 / 0.24);
+}
+
+/* Topic detail now answers the user's first question before listing evidence. */
+.topic-detail-shell details {
+  border-left: 2px solid var(--color-primary-fill);
+}
+
+.dark .topic-detail-shell details {
+  border-left-color: var(--color-primary-fill);
+}
+
+/* Data-led motion: establishes reading order and change, never decoration. */
+.signal-enter { animation: signal-enter 360ms cubic-bezier(.2,.8,.2,1) both; }
+.signal-enter:nth-child(2) { animation-delay: 45ms; }
+.signal-enter:nth-child(3) { animation-delay: 90ms; }
+
+@keyframes signal-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.momentum-fill { transform-origin: left; animation: momentum-grow 520ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes momentum-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.trend-card[aria-current="true"],
+.group[aria-current="true"] {
+  box-shadow: inset 3px 0 0 var(--color-primary-fill);
+}
+
+.topic-detail-enter { animation: detail-enter 260ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes detail-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+.live-status { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--color-primary-ink); }
+.live-status i { width: 0.42rem; height: 0.42rem; border-radius: 999px; background: #57cf8a; box-shadow: 0 0 0 0 rgb(87 207 138 / .42); animation: live-pulse 2.6s ease-out infinite; }
+@keyframes live-pulse { 70% { box-shadow: 0 0 0 5px rgb(87 207 138 / 0); } 100% { box-shadow: 0 0 0 0 rgb(87 207 138 / 0); } }
+
+.feed-group-enter, .feed-item-enter { animation: feed-enter 280ms ease-out both; }
+@keyframes feed-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+.article-meta { font-size: 0.75rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-enter, .momentum-fill, .topic-detail-enter, .live-status i, .feed-group-enter, .feed-item-enter { animation: none; }
+}

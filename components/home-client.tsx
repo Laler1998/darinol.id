@@ -9,10 +9,12 @@ import { TrendAgent } from "@/components/trend-agent";
 import { AlertIcon, RefreshIcon } from "@/components/icons";
 import { type Language, type MainView, type ThemeMode, copy, cultureCategoryFilters, newsCategoryFilters } from "@/lib/copy";
 import { buildLatestFeed, formatClock } from "@/lib/format";
+import { trackFunnel } from "@/lib/analytics";
 import type { RadarFilter, Topic, TrendsPayload } from "@/lib/types";
 
 const CACHE_PREFIX = "darinol-trends-cache-v4";
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 type CachedPayload = TrendsPayload & { cachedAt?: number };
 
 type HomeClientProps = { initialPayload: TrendsPayload };
@@ -33,9 +35,12 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
   const [loading, setLoading] = useState(!initialPayload.topics?.length);
   const [loadFailed, setLoadFailed] = useState(false);
   const [updatedAtIso, setUpdatedAtIso] = useState(initialPayload.updatedAt ?? "");
+  const [dataSource, setDataSource] = useState(initialPayload.source);
+  const [showStaleData, setShowStaleData] = useState(false);
   const requestRef = useRef(0);
   const initialPayloadRef = useRef(initialPayload);
   const detailRef = useRef<HTMLDivElement | null>(null);
+  const firstSignalTrackedRef = useRef(false);
   const t = copy[language];
 
   useEffect(() => {
@@ -86,8 +91,21 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
     setTopics(payload.topics);
     setSelectedId((currentId) => currentId && payload.topics.some((topic) => topic.id === currentId) ? currentId : payload.topics[0].id);
     setUpdatedAtIso(payload.updatedAt);
+    setDataSource(payload.source);
   }, []);
 
+  const getCachedPayload = useCallback((radar: RadarFilter) => {
+    try {
+      const cachedValue = window.localStorage.getItem(`${CACHE_PREFIX}-${radar}`);
+      if (!cachedValue) return null;
+      const cached = JSON.parse(cachedValue) as CachedPayload;
+      if (!cached.cachedAt || Date.now() - cached.cachedAt > CACHE_MAX_AGE_MS || !cached.topics?.length) return null;
+      return cached;
+    } catch {
+      window.localStorage.removeItem(`${CACHE_PREFIX}-${radar}`);
+      return null;
+    }
+  }, []);
   const loadTrends = useCallback(async (radar: RadarFilter, options: { skipCache?: boolean } = {}) => {
     const requestId = requestRef.current + 1;
     requestRef.current = requestId;
@@ -96,47 +114,41 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
     setLoadFailed(false);
 
     if (!options.skipCache) {
-      try {
-        const cachedValue = window.localStorage.getItem(cacheKey);
-        if (cachedValue) {
-          const cached = JSON.parse(cachedValue) as CachedPayload;
-          if (cached.cachedAt && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
-            applyPayload(cached);
-            setLoading(false);
-          }
-        }
-      } catch {
-        window.localStorage.removeItem(cacheKey);
+      const cached = getCachedPayload(radar);
+      if (cached) {
+        applyPayload(cached);
+        setShowStaleData(true);
+        setLoading(false);
       }
     }
 
     try {
       const response = await fetch(`/api/trends?radar_type=${radar}`, { cache: options.skipCache ? "no-store" : "default" });
+      if (!response.ok) throw new Error(`Trends request failed: ${response.status}`);
       const payload = (await response.json()) as TrendsPayload;
       if (requestRef.current !== requestId) return;
       if (!payload.topics?.length) throw new Error("Empty trends payload");
       applyPayload(payload);
       window.localStorage.setItem(cacheKey, JSON.stringify({ ...payload, cachedAt: Date.now() }));
+      setShowStaleData(false);
     } catch {
       if (requestRef.current !== requestId) return;
       setLoadFailed(true);
     } finally {
       if (requestRef.current === requestId) setLoading(false);
     }
-  }, [applyPayload]);
+  }, [applyPayload, getCachedPayload]);
 
   useEffect(() => {
-    if (activeRadar === initialRadar && initialPayloadRef.current.topics?.length) {
-      try {
-        window.localStorage.setItem(`${CACHE_PREFIX}-${initialRadar}`, JSON.stringify({ ...initialPayloadRef.current, cachedAt: Date.now() }));
-      } catch {
-        // The server-rendered payload remains usable when storage is unavailable.
-      }
-      initialPayloadRef.current = { ...initialPayloadRef.current, topics: [] };
-      return;
-    }
+    // Refresh in the background after rendering server/browser data immediately.
     void loadTrends(activeRadar);
-  }, [activeRadar, initialRadar, loadTrends]);
+  }, [activeRadar, loadTrends]);
+
+  useEffect(() => {
+    if (!topics.length || firstSignalTrackedRef.current) return;
+    firstSignalTrackedRef.current = true;
+    trackFunnel("first_signal_visible", { radar: activeRadar, source: dataSource, signal_count: topics.length, stale: showStaleData });
+  }, [activeRadar, dataSource, showStaleData, topics.length]);
 
   const query = search.trim().toLowerCase();
   const filteredTopics = useMemo(() => topics.filter((topic) => {
@@ -188,6 +200,8 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
 
   function handleSelectTopic(topicId: string) {
     setSelectedId(topicId);
+    const topic = filteredTopics.find((item) => item.id === topicId);
+    trackFunnel("signal_opened", { radar: activeRadar, topic: topic?.name ?? topicId, category: topic?.category ?? "unknown" });
     if (isMobile) window.requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
 
@@ -201,16 +215,17 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
   const totalSources = filteredTopics.reduce((total, topic) => total + (topic.total_sources ?? new Set(topic.articles.map((article) => article.source)).size), 0);
   const highestScore = filteredTopics[0]?.culture_score ?? filteredTopics[0]?.score ?? 0;
   const highestTopic = filteredTopics[0]?.name ?? "—";
+  const highestOpportunity = filteredTopics[0]?.opportunity_score ?? 0;
 
   return (
     <div className="min-h-screen bg-darinol-background">
       <a href="#main" className="skip-link">{t.skipToContent}</a>
-      <AppShell search={search} onSearchChange={setSearch} updatedAt={updatedAtIso ? formatClock(updatedAtIso, language) : "—"} onRefresh={() => void loadTrends(activeRadar, { skipCache: true })} refreshing={loading} activeView={activeView} onViewChange={setActiveView} language={language} onLanguageChange={setLanguage} themeMode={themeMode} onThemeToggle={() => setThemeMode((currentTheme) => currentTheme === "dark" ? "light" : "dark")} activeRadar={activeRadar} onRadarChange={handleSelectRadar} t={t} />
+      <AppShell search={search} onSearchChange={setSearch} updatedAt={updatedAtIso ? formatClock(updatedAtIso, language) : "—"} onRefresh={() => { trackFunnel("radar_refresh_requested", { radar: activeRadar }); void loadTrends(activeRadar, { skipCache: true }); }} refreshing={loading} activeView={activeView} onViewChange={setActiveView} language={language} onLanguageChange={setLanguage} themeMode={themeMode} onThemeToggle={() => setThemeMode((currentTheme) => currentTheme === "dark" ? "light" : "dark")} activeRadar={activeRadar} onRadarChange={handleSelectRadar} t={t} />
       <div className="min-w-0 px-4 py-6 sm:px-6 lg:px-10 lg:py-9 xl:px-14">
-        {loadFailed ? <div role="alert" className="mb-6 flex flex-col gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><p className="flex items-center gap-2 text-sm font-medium text-darinol-text"><AlertIcon className="h-4 w-4 text-rose-600 dark:text-rose-400" />{t.loadFailed}</p><button type="button" onClick={() => void loadTrends(activeRadar, { skipCache: true })} className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-darinol-primaryFill px-4 text-xs font-semibold text-white"><RefreshIcon className="h-3.5 w-3.5" />{t.refresh}</button></div> : null}
+        {showStaleData || dataSource.includes("fallback") || dataSource.includes("sample") ? <div role="status" className="mb-4 flex items-center gap-2 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs font-medium text-darinol-muted"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />{showStaleData ? "Menampilkan data terakhir sambil memperbarui radar." : "Sebagian data menggunakan sumber cadangan."}</div> : null}{loadFailed ? <div role="alert" className="mb-6 flex flex-col gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><p className="flex items-center gap-2 text-sm font-medium text-darinol-text"><AlertIcon className="h-4 w-4 text-rose-600 dark:text-rose-400" />{t.loadFailed}</p><button type="button" onClick={() => void loadTrends(activeRadar, { skipCache: true })} className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-darinol-primaryFill px-4 text-xs font-semibold text-white"><RefreshIcon className="h-3.5 w-3.5" />{t.refresh}</button></div> : null}
         <main id="main" className="mx-auto w-full max-w-[1440px]">
-          <header className="border-b border-darinol-border/70 pb-6"><div><p className="text-xs font-medium text-darinol-muted">Darinol / <span className="text-darinol-text">{activeView === "radar" ? t.radarTab : t.latestTab}</span></p><h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight text-darinol-text sm:text-4xl">{activeView === "radar" ? "Sinyal tren hari ini" : t.latestTab}</h1></div></header>
-          {activeView === "radar" ? <><section className="grid gap-3 py-6 sm:grid-cols-3" aria-label="Ringkasan radar"><div className="rounded-xl border border-darinol-border/70 bg-darinol-surface p-4"><p className="text-xs font-medium text-darinol-muted">Skor tertinggi</p><p className="mt-2 font-heading text-3xl font-semibold tabular-nums text-darinol-primaryInk">{highestScore}</p><p className="mt-1 text-xs text-darinol-muted">{highestTopic}</p></div><div className="rounded-xl border border-darinol-border/70 bg-darinol-surface p-4"><p className="text-xs font-medium text-darinol-muted">Sumber aktif</p><p className="mt-2 font-heading text-3xl font-semibold tabular-nums text-darinol-text">{totalSources}</p><p className="mt-1 text-xs text-darinol-success">Dari topik yang terpantau</p></div><div className="rounded-xl border border-darinol-border/70 bg-darinol-surface p-4"><p className="text-xs font-medium text-darinol-muted">Berita masuk</p><p className="mt-2 font-heading text-3xl font-semibold tabular-nums text-darinol-text">{totalArticles}</p><p className="mt-1 text-xs text-darinol-muted">Update berkala</p></div></section><section id="radar-section" className="scroll-mt-6"><div className="mb-4 flex items-center justify-between gap-4"><div><h2 className="font-heading text-xl font-semibold text-darinol-text">Radar topik</h2><p className="mt-1 text-sm text-darinol-muted">Pilih sinyal untuk melihat berita dan sumber terkait.</p></div><span className="hidden text-xs font-semibold text-darinol-primaryInk sm:block">{filteredTopics.length} sinyal terpantau</span></div><div className="space-y-5"><TopicList topics={filteredTopics} totalCount={filteredTopics.length} selectedTopicId={selectedTopic?.id ?? null} activeRadar={activeRadar} selectedCategories={selectedCategories} onCategoryPreferenceChange={handleCategoryPreferenceChange} onResetCategories={handleResetCategories} onRadarChange={handleSelectRadar} categoryFilters={categoryFilters} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onSelectTopic={handleSelectTopic} loading={loading} search={search} onSearchChange={setSearch} language={language} t={t} /><div ref={detailRef} className="mx-auto w-full max-w-5xl"><TopicDetail topic={selectedTopic} loading={loading} language={language} onNextTopic={handleNextTopic} t={t} /></div></div></section></> : <section className="pt-6"><LatestFeed articles={latestFeed} loading={loading} language={language} t={t} /></section>}
+          <header className="border-b border-darinol-border/70 pb-5"><div><p className="text-xs font-medium text-darinol-muted">Darinol / <span className="text-darinol-text">{activeView === "radar" ? t.radarTab : activeView === "culture" ? t.cultureRadar : t.latestTab}</span></p><h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight text-darinol-text sm:text-4xl">{activeView === "radar" ? "Sinyal yang layak ditindaklanjuti" : activeView === "culture" ? "Sinyal sosial yang layak dieksplorasi" : t.latestTab}</h1>{activeView !== "latest" ? <p className="mt-2 max-w-2xl text-sm text-darinol-muted">{activeView === "culture" ? "Pantau percakapan, format konten, dan peluang kreator yang sedang bergerak." : "Mulai dari sinyal teratas, pilih topik, lalu baca bukti dan sumber yang menggerakkannya."}</p> : null}</div></header>
+          {activeView !== "latest" ? <div key={activeView} data-page={activeView} className="page-view-enter"><section id="radar-section" className="scroll-mt-6"><div className="space-y-5"><TopicList topics={filteredTopics} totalCount={filteredTopics.length} selectedTopicId={selectedTopic?.id ?? null} activeRadar={activeRadar} isCulture={activeView === "culture"} selectedCategories={selectedCategories} onCategoryPreferenceChange={handleCategoryPreferenceChange} onResetCategories={handleResetCategories} onRadarChange={handleSelectRadar} categoryFilters={categoryFilters} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onSelectTopic={handleSelectTopic} loading={loading} search={search} onSearchChange={setSearch} language={language} t={t} /><div className="dashboard-summary"><section className="grid gap-3 py-6 sm:grid-cols-3" aria-label="Ringkasan radar"><div className="rounded-xl border border-darinol-border/70 bg-darinol-surface p-4"><p className="text-xs font-medium text-darinol-muted">{activeView === "culture" ? t.cultureScore : "Skor tertinggi"}</p><p className="mt-2 font-heading text-3xl font-semibold tabular-nums text-darinol-primaryInk">{highestScore}</p><p className="mt-1 text-xs text-darinol-muted">{highestTopic}</p></div><div className="rounded-xl border border-darinol-border/70 bg-darinol-surface p-4"><p className="text-xs font-medium text-darinol-muted">{activeView === "culture" ? t.opportunityScore : "Sumber aktif"}</p><p className="mt-2 font-heading text-3xl font-semibold tabular-nums text-darinol-text">{activeView === "culture" ? highestOpportunity : totalSources}</p><p className="mt-1 text-xs text-darinol-success">{activeView === "culture" ? "Peluang teratas saat ini" : "Dari topik yang terpantau"}</p></div><div className="rounded-xl border border-darinol-border/70 bg-darinol-surface p-4"><p className="text-xs font-medium text-darinol-muted">{activeView === "culture" ? "Konten terpantau" : "Berita masuk"}</p><p className="mt-2 font-heading text-3xl font-semibold tabular-nums text-darinol-text">{totalArticles}</p><p className="mt-1 text-xs text-darinol-muted">Update berkala</p></div></section></div><div ref={detailRef} key={selectedTopic?.id ?? "empty"} className="topic-detail-enter mx-auto w-full max-w-5xl"><TopicDetail topic={selectedTopic} loading={loading} language={language} onNextTopic={handleNextTopic} t={t} /></div></div></section></div> : <section key="latest" className="page-view-enter pt-6"><LatestFeed articles={latestFeed} loading={loading} language={language} t={t} /></section>}
         </main>
       </div>
       <TrendAgent topics={filteredTopics} language={language} />

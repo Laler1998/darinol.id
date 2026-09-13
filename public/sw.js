@@ -10,7 +10,7 @@
  *   /api/trends -> network first, fall back to the last successful response
  *   static      -> cache first (Next.js fingerprints these, so they never change)
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL_CACHE = `darinol-shell-${VERSION}`;
 const DATA_CACHE = `darinol-data-${VERSION}`;
 const STATIC_CACHE = `darinol-static-${VERSION}`;
@@ -81,6 +81,19 @@ async function cacheFirst(request, cacheName) {
   return response;
 }
 
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  const network = fetch(request)
+    .then((response) => {
+      if (response && response.ok) cache.put(request, response.clone());
+      return response;
+    })
+    .catch(() => undefined);
+
+  if (cached) return cached;
+  return (await network) ?? Response.error();
+}
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
@@ -102,7 +115,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (url.pathname.startsWith("/api/")) {
-    event.respondWith(networkFirst(request, DATA_CACHE));
+    event.respondWith(staleWhileRevalidate(request, DATA_CACHE));
     return;
   }
 

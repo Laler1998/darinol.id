@@ -1,10 +1,31 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ChevronRightIcon, TrendIcon } from "./icons";
 import { getCategoryStyle } from "@/lib/categories";
 import { getMomentumLabel, getTopicLabel } from "@/lib/format";
 import type { Language } from "@/lib/copy";
 import type { Topic } from "@/lib/types";
+
+function useAnimatedScore(score: number) {
+  const [displayedScore, setDisplayedScore] = useState(0);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setDisplayedScore(score); return; }
+    const start = performance.now();
+    const from = displayedScore;
+    let frame = 0;
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / 360, 1);
+      setDisplayedScore(Math.round(from + (score - from) * (1 - Math.pow(1 - progress, 3))));
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [score]);
+
+  return displayedScore;
+}
 
 /**
  * The top three signals use a compact ranked-card treatment; the remaining
@@ -32,6 +53,7 @@ export function TopicRow({
   const sourceCount =
     topic.total_sources ?? new Set(topic.articles.map((article) => article.source)).size;
   const score = topic.culture_score ?? topic.score;
+  const displayedScore = useAnimatedScore(score);
 
   function handlePointerMove(event: React.PointerEvent<HTMLButtonElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -55,7 +77,7 @@ export function TopicRow({
         onPointerLeave={handlePointerLeave}
         aria-current={selected ? "true" : undefined}
         className={[
-          "trend-card group flex w-full min-h-[196px] flex-col gap-3 rounded-2xl border px-4 py-[18px] text-left transition duration-200 ease-out hover:-translate-y-0.5 hover:border-darinol-primary/50 hover:shadow-[0_12px_28px_rgba(0,0,0,0.16)] active:scale-[0.97]",
+          "trend-card group flex w-full min-h-[196px] flex-col gap-3 signal-enter rounded-2xl border px-4 py-[18px] text-left transition duration-200 ease-out hover:-translate-y-0.5 hover:border-darinol-primary/50 hover:shadow-[0_12px_28px_rgba(0,0,0,0.16)] active:scale-[0.97]",
           selected
             ? "border-darinol-primary bg-darinol-primary/10"
             : isPrimary
@@ -149,7 +171,7 @@ export function TopicRow({
         <span className="hidden w-16 sm:block" aria-hidden="true">
           <span className="block h-1.5 overflow-hidden rounded-full bg-darinol-muted/20">
             <span
-              className="block h-full rounded-full bg-darinol-primary"
+              className="momentum-fill block h-full rounded-full bg-darinol-primary"
               style={{ width: `${Math.min(score, 100)}%` }}
             />
           </span>

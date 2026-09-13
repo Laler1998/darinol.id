@@ -101,6 +101,28 @@ export function TopicDetail({
       </header>
 
       <div className="p-5 sm:p-6">
+        <details className="group mb-5 rounded-xl border border-darinol-border/60 bg-darinol-surface/40">
+          <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3.5 py-2.5 text-sm font-semibold text-darinol-text">
+            {t.whyTrending}
+            <span className="text-xs font-medium text-darinol-muted group-open:hidden">
+              {t.expand}
+            </span>
+          </summary>
+          <ul className="space-y-2 px-3.5 pb-3.5">
+            {topic.whyViral.map((reason) => (
+              <li key={reason} className="flex gap-2.5">
+                <span
+                  className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-darinol-primary"
+                  aria-hidden="true"
+                />
+                <span className="text-xs font-medium leading-relaxed text-darinol-muted">
+                  {reason}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
+
         <div className="mb-4 flex items-baseline justify-between gap-4">
           <h3 className="shrink-0 font-heading text-base font-semibold text-darinol-text">
             {t.relatedNews}
@@ -130,27 +152,7 @@ export function TopicDetail({
 
         {remainingArticles ? <p className="mt-3 text-xs font-semibold text-darinol-primaryInk">+ {remainingArticles} sumber lainnya tersedia</p> : null}
 
-        <details className="group mt-6 rounded-xl border border-darinol-border/60 bg-darinol-surface/40">
-          <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3.5 py-2.5 text-sm font-semibold text-darinol-text">
-            {t.whyTrending}
-            <span className="text-xs font-medium text-darinol-muted group-open:hidden">
-              {t.expand}
-            </span>
-          </summary>
-          <ul className="space-y-2 px-3.5 pb-3.5">
-            {topic.whyViral.map((reason) => (
-              <li key={reason} className="flex gap-2.5">
-                <span
-                  className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-darinol-primary"
-                  aria-hidden="true"
-                />
-                <span className="text-xs font-medium leading-relaxed text-darinol-muted">
-                  {reason}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </details>
+
 
         <button
           type="button"

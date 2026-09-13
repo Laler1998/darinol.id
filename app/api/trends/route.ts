@@ -71,7 +71,7 @@ function trendsJson(payload: unknown, init?: ResponseInit) {
   response.headers.set(
     "Cache-Control",
     payloadRadarType === "culture"
-      ? "no-store"
+      ? "public, s-maxage=180, stale-while-revalidate=600"
       : "public, s-maxage=300, stale-while-revalidate=900",
   );
 
