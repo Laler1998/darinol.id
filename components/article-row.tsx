@@ -25,16 +25,20 @@ export function ArticleRow({
 }) {
   const hasSource = Boolean(article.url) && article.url !== "#";
   const style = getCategoryStyle(categoryLabel ?? "", isCulture);
-  const [relativeTime, setRelativeTime] = useState(language === "id" ? "memuat..." : "loading...");
+  const [relativeTime, setRelativeTime] = useState("—");
+  const title = article.title?.trim() || (language === "id" ? "Berita terbaru" : "Latest news");
+  const sourceName = article.source?.trim() || (language === "id" ? "Sumber berita" : "News source");
 
   useEffect(() => {
     setRelativeTime(formatRelativeTime(article.publishedAt, language));
   }, [article.publishedAt, language]);
 
+  const sourceInitial = sourceName.charAt(0).toUpperCase();
+
   const content = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-semibold leading-snug text-darinol-text">{article.title}</p>
+        <p className="text-sm font-semibold leading-snug text-darinol-text">{title}</p>
         {hasSource ? (
           <ExternalIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-darinol-muted/50 transition group-hover:text-darinol-primaryInk" />
         ) : null}
@@ -50,7 +54,7 @@ export function ArticleRow({
             {categoryLabel}
           </span>
         ) : null}
-        <span className="truncate">{article.source}</span>
+        <span className="grid h-4 w-4 place-items-center rounded-sm bg-darinol-primary/15 text-[9px] font-bold text-darinol-primaryInk" aria-hidden="true">{sourceInitial}</span><span className="truncate">{sourceName}</span>
         <span aria-hidden="true">·</span>
         <time dateTime={article.publishedAt ?? undefined} className="tabular-nums">
           {relativeTime}

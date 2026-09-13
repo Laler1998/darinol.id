@@ -7,10 +7,8 @@ import type { Language } from "@/lib/copy";
 import type { Topic } from "@/lib/types";
 
 /**
- * Dense scannable row, not a card. 28 topics in a 4-column card grid forced
- * users to hunt; a single ranked column reads top-to-bottom like a chart.
- * Rank 1 gets an elevated briefing treatment so the strongest signal is
- * visually unmistakable before a user reads a single number.
+ * The top three signals use a compact ranked-card treatment; the remaining
+ * signals stay as dense rows so the strongest signals remain easy to scan.
  */
 export function TopicRow({
   topic,
@@ -35,38 +33,56 @@ export function TopicRow({
     topic.total_sources ?? new Set(topic.articles.map((article) => article.source)).size;
   const score = topic.culture_score ?? topic.score;
 
+  function handlePointerMove(event: React.PointerEvent<HTMLButtonElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - bounds.left) / bounds.width) * 100;
+    const y = ((event.clientY - bounds.top) / bounds.height) * 100;
+    event.currentTarget.style.setProperty("--card-pointer-x", `${x}%`);
+    event.currentTarget.style.setProperty("--card-pointer-y", `${y}%`);
+    event.currentTarget.style.setProperty("--card-glow-opacity", "1");
+  }
+
+  function handlePointerLeave(event: React.PointerEvent<HTMLButtonElement>) {
+    event.currentTarget.style.setProperty("--card-glow-opacity", "0");
+  }
+
   if (isPrimary) {
     return (
       <button
         type="button"
         onClick={onClick}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
         aria-current={selected ? "true" : undefined}
         className={[
-          "group flex w-full flex-col gap-3 rounded-2xl border px-4 py-4 text-left transition",
+          "trend-card group flex w-full min-h-[196px] flex-col gap-3 rounded-2xl border px-4 py-[18px] text-left transition duration-200 ease-out hover:-translate-y-0.5 hover:border-darinol-primary/50 hover:shadow-[0_12px_28px_rgba(0,0,0,0.16)] active:scale-[0.97]",
           selected
             ? "border-darinol-primary bg-darinol-primary/10"
-            : "border-darinol-primary/30 bg-darinol-surfaceRaised hover:border-darinol-primary/50",
+            : isPrimary
+              ? "border-darinol-border"
+              : "border-darinol-border",
+          rank === 1 && !selected ? "trend-card-rank1" : "",
         ].join(" ")}
       >
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-darinol-primaryFill px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-            #1
+          <span className="rounded-md bg-darinol-primary px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[#1a0a03]">
+            #{rank}
           </span>
-          <span className={["rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide", style.chip].join(" ")}>
+          <span className="rounded-md bg-darinol-muted/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-darinol-muted">
             {label}
           </span>
         </div>
 
-        <span className="font-heading text-xl font-semibold leading-tight text-darinol-text">
+        <span className="line-clamp-2 min-h-[3.5rem] font-heading text-[15px] font-semibold leading-[1.4] text-darinol-text">
           {topic.name}
         </span>
 
         <div className="flex items-end justify-between gap-3">
-          <span className="flex items-center gap-1.5 text-xs font-medium text-darinol-muted">
-            <TrendIcon className="h-3.5 w-3.5 text-darinol-primaryInk" />
+          <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-[#7ee0a8]">
+            <TrendIcon className="h-3.5 w-3.5" />
             {getMomentumLabel(topic.score, language)}
           </span>
-          <span className="font-heading text-3xl font-semibold tabular-nums text-darinol-text">
+          <span className="font-heading text-[22px] font-bold tabular-nums text-darinol-primaryInk">
             {score}
           </span>
         </div>
@@ -120,9 +136,7 @@ export function TopicRow({
         <span className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-darinol-muted">
           {/* Category stays available as text on narrow screens, where the chip is hidden. */}
           <span className="truncate font-semibold sm:hidden">{label}</span>
-          <span className="sm:hidden" aria-hidden="true">
-            ·
-          </span>
+          <span className="sm:hidden" aria-hidden="true">·</span>
           <span className="shrink-0 tabular-nums">
             {articleCount} {language === "id" ? "berita" : "articles"}
           </span>

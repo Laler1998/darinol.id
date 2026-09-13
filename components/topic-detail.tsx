@@ -14,7 +14,7 @@ function Stat({ label, value }: { label: string; value: string }) {
       <dt className="text-[10px] font-semibold uppercase tracking-wide text-darinol-muted">
         {label}
       </dt>
-      <dd className="mt-0.5 font-heading text-lg font-semibold tabular-nums text-darinol-text">
+      <dd className="mt-0.5 font-heading text-base font-semibold tabular-nums text-darinol-text">
         {value}
       </dd>
     </div>
@@ -58,10 +58,11 @@ export function TopicDetail({
   const articleCount = topic.total_articles ?? topic.articles.length;
   const sourceCount =
     topic.total_sources ?? new Set(topic.articles.map((article) => article.source)).size;
-  const articles = topic.articles;
+  const articles = topic.articles.slice(0, 4);
+  const remainingArticles = Math.max(topic.articles.length - articles.length, 0);
 
   return (
-    <section aria-label={topic.name} className="glass-card overflow-hidden rounded-2xl">
+    <section aria-label={topic.name} className="glass-card topic-detail-shell overflow-hidden rounded-2xl">
       <header className="border-b border-darinol-border/60 p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
           <span
@@ -82,11 +83,11 @@ export function TopicDetail({
           ) : null}
         </div>
 
-        <h2 className="mt-4 font-heading text-3xl font-semibold leading-tight tracking-tight text-darinol-text md:text-4xl">
+        <h3 className="mt-3 font-heading text-2xl font-semibold leading-tight tracking-tight text-darinol-text md:text-3xl">
           {topic.name}
-        </h2>
+        </h3>
 
-        <dl className="mt-6 grid grid-cols-3 gap-4 border-t border-darinol-border/60 pt-4">
+        <dl className="mt-5 grid grid-cols-3 gap-4 border-t border-darinol-border/60 pt-3">
           <Stat
             label={isCulture ? t.cultureScore : t.trendScore}
             value={String(topic.culture_score ?? topic.score)}
@@ -126,6 +127,8 @@ export function TopicDetail({
             {t.noSource}
           </p>
         )}
+
+        {remainingArticles ? <p className="mt-3 text-xs font-semibold text-darinol-primaryInk">+ {remainingArticles} sumber lainnya tersedia</p> : null}
 
         <details className="group mt-6 rounded-xl border border-darinol-border/60 bg-darinol-surface/40">
           <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3.5 py-2.5 text-sm font-semibold text-darinol-text">

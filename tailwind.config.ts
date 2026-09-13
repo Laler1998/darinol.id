@@ -21,7 +21,7 @@ const config: Config = {
           primaryInk: "var(--color-primary-ink)",
           text: "var(--color-text)",
           muted: "var(--color-muted)",
-          border: "var(--color-border)",
+          border: "rgb(var(--color-border) / <alpha-value>)",
           success: "#22C55E",
         },
       },
