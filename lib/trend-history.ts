@@ -87,8 +87,8 @@ export async function applyHistoricalGrowth(topics: Topic[]) {
     SELECT DISTINCT ON (market, radar_type, topic_id)
       market, radar_type, topic_id, topic_name, mention_count, source_count, observed_at
     FROM darinol_trend_snapshots
-    WHERE observed_at <= NOW() - INTERVAL '45 minutes'
-      AND observed_at >= NOW() - INTERVAL '150 minutes'
+    WHERE observed_at <= NOW() - INTERVAL '22 hours'
+      AND observed_at >= NOW() - INTERVAL '26 hours'
     ORDER BY market, radar_type, topic_id, observed_at DESC
   `) as SnapshotRow[];
   const baselines = new Map(rows.map((row) => [snapshotKey(row), row]));
