@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronRightIcon, TrendIcon } from "./icons";
 import { getCategoryStyle } from "@/lib/categories";
-import { getMomentumLabel, getTopicLabel } from "@/lib/format";
+import { getDataStatusLabel, getGrowthLabel, getTopicLabel } from "@/lib/format";
 import type { Language } from "@/lib/copy";
 import type { Topic } from "@/lib/types";
 
@@ -54,6 +54,10 @@ export function TopicRow({
     topic.total_sources ?? new Set(topic.articles.map((article) => article.source)).size;
   const score = topic.culture_score ?? topic.score;
   const displayedScore = useAnimatedScore(score);
+  const statusLabel = getDataStatusLabel(topic, language);
+  const growthLabel = getGrowthLabel(topic, language);
+  const growthIsPositive = topic.growth_status === "measured" && (topic.growth_percent ?? 0) > 0;
+  const growthIsNegative = topic.growth_status === "measured" && (topic.growth_percent ?? 0) < 0;
 
   function handlePointerMove(event: React.PointerEvent<HTMLButtonElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -87,29 +91,41 @@ export function TopicRow({
         ].join(" ")}
       >
         <div className="flex items-center gap-2">
-          <span className="rounded-md bg-darinol-primary px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[#1a0a03]">
+          <span className="rounded-md bg-darinol-primary px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-[#1a0a03]">
             #{rank}
           </span>
-          <span className="rounded-md bg-darinol-muted/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-darinol-muted">
+          <span className="rounded-md bg-darinol-muted/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-darinol-muted">
             {label}
           </span>
+          {statusLabel ? (
+            <span className="rounded-md border border-darinol-border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-darinol-muted">
+              {statusLabel}
+            </span>
+          ) : null}
         </div>
 
-        <span className="line-clamp-2 min-h-[3.5rem] font-heading text-[15px] font-semibold leading-[1.4] text-darinol-text">
+        <span className="line-clamp-2 min-h-[3.5rem] font-heading text-[18px] font-semibold leading-[1.4] text-darinol-text">
           {topic.name}
         </span>
 
         <div className="flex items-end justify-between gap-3">
-          <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-[#7ee0a8]">
-            <TrendIcon className="h-3.5 w-3.5" />
-            {getMomentumLabel(topic.score, language)}
+          <span className={[
+            "flex items-center gap-1.5 text-xs font-medium",
+            growthIsPositive
+              ? "text-emerald-600 dark:text-[#7ee0a8]"
+              : growthIsNegative
+                ? "text-rose-600 dark:text-rose-400"
+                : "text-darinol-muted",
+          ].join(" ")}>
+            {growthIsPositive ? <TrendIcon className="h-3.5 w-3.5" /> : null}
+            {growthLabel}
           </span>
           <span className="font-heading text-[22px] font-bold tabular-nums text-darinol-primaryInk">
             {score}
           </span>
         </div>
 
-        <div className="flex items-center gap-3 border-t border-darinol-border/60 pt-3 text-[11px] font-medium tabular-nums text-darinol-muted">
+        <div className="flex items-center gap-3 border-t border-darinol-border/60 pt-3 text-[13px] font-medium tabular-nums text-darinol-muted">
           <span>{articleCount} {language === "id" ? "berita" : "articles"}</span>
           <span aria-hidden="true">·</span>
           <span>{sourceCount} {language === "id" ? "sumber" : "sources"}</span>
@@ -143,9 +159,7 @@ export function TopicRow({
 
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="truncate font-heading text-sm font-semibold text-darinol-text">
-            {topic.name}
-          </span>
+          <span className="truncate font-heading text-sm font-semibold text-darinol-text">{topic.name}</span>
           <span
             className={[
               "hidden shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide sm:block",
@@ -155,7 +169,7 @@ export function TopicRow({
             {label}
           </span>
         </span>
-        <span className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-darinol-muted">
+        <span className="mt-1 flex items-center gap-1.5 text-[13px] font-medium text-darinol-muted">
           {/* Category stays available as text on narrow screens, where the chip is hidden. */}
           <span className="truncate font-semibold sm:hidden">{label}</span>
           <span className="sm:hidden" aria-hidden="true">·</span>
@@ -163,7 +177,7 @@ export function TopicRow({
             {articleCount} {language === "id" ? "berita" : "articles"}
           </span>
           <span aria-hidden="true">·</span>
-          <span className="truncate">{getMomentumLabel(topic.score, language)}</span>
+          <span className="truncate">{growthLabel}</span>
         </span>
       </span>
 

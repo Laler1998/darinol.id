@@ -21,6 +21,7 @@ export type CultureTrend = {
   culture_category: CultureCategory;
   radar_type: "culture";
   source: string;
+  data_status?: "live" | "stale" | "sample" | "fallback";
   score: number;
   growth: string;
   culture_score: number;
@@ -213,8 +214,9 @@ function buildCultureTrend({
     culture_category,
     radar_type: "culture",
     source,
+    data_status: "live",
     score,
-    growth: `+${Math.min(240, 60 + frequency_score * 4 + engagement_score * 3)}%`,
+    growth: "Belum diukur",
     culture_score: scores.culture_score,
     frequency_score,
     recency_score,
@@ -244,6 +246,7 @@ function sampleCultureTrend(
     ...trend,
     radar_type: "culture",
     category: "Culture",
+    data_status: "sample",
     culture_score: scores.culture_score,
     opportunity_score: scores.opportunity_score,
     is_sample: true,
@@ -315,7 +318,7 @@ export const sampleCultureTrends: CultureTrend[] = [
     culture_category: "lifestyle",
     source: "Sample placeholder - manual seed",
     score: 86,
-    growth: "+180%",
+    growth: "Belum diukur",
     frequency_score: 24,
     recency_score: 22,
     engagement_score: 20,
@@ -341,7 +344,7 @@ export const sampleCultureTrends: CultureTrend[] = [
     culture_category: "beauty",
     source: "Sample placeholder - creator trend",
     score: 82,
-    growth: "+145%",
+    growth: "Belum diukur",
     frequency_score: 22,
     recency_score: 20,
     engagement_score: 18,
@@ -367,7 +370,7 @@ export const sampleCultureTrends: CultureTrend[] = [
     culture_category: "meme",
     source: "Sample placeholder - Reddit/public meme monitoring",
     score: 79,
-    growth: "+120%",
+    growth: "Belum diukur",
     frequency_score: 20,
     recency_score: 18,
     engagement_score: 17,

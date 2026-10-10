@@ -55,13 +55,3 @@ export function scoreTopic({
     Math.min(SCORE_CEILING, Math.round(BASE + recency + volume + diversity - penalty)),
   );
 }
-
-export function growthLabel({
-  articleCount,
-  sourceCount,
-}: {
-  articleCount: number;
-  sourceCount: number;
-}): string {
-  return `+${Math.min(380, 80 + articleCount * 45 + sourceCount * 25)}%`;
-}

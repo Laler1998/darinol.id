@@ -22,10 +22,10 @@ export function TopicList({ topics, totalCount, selectedTopicId, activeRadar, is
 
   return <section aria-label={t.radarTab} className="space-y-4">
     <div className="sticky top-16 z-30 -mx-4 border-y border-darinol-border/70 bg-darinol-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10 xl:-mx-14 xl:px-14">
-      <div className="mx-auto flex max-w-[1440px] items-center gap-3">
-        <div className="filter-label shrink-0"><p className="text-[11px] font-bold text-darinol-text">Filter topik</p><span className="text-[10px] text-darinol-muted">{activeCategory === "Semua" ? t.all : activeCategory.replace(/_/g, " ")}</span></div>
+      <div className="flex w-full items-center gap-3">
+        <div className="filter-label shrink-0"><p className="text-[15px] font-bold text-darinol-text">Filter topik</p><span className="text-[13px] text-darinol-muted">{activeCategory === "Semua" ? t.all : activeCategory.replace(/_/g, " ")}</span></div>
         <div ref={chipStripRef} className="flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5">
-          {categoryFilters.map((category) => { const active = activeCategory === category; const style = getCategoryStyle(category, activeRadar === "culture"); return <button key={category} type="button" onClick={() => onCategoryChange(category)} aria-pressed={active} className={["tap-target flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition", active ? "border-darinol-primary bg-darinol-primaryFill text-white" : "border-darinol-border bg-darinol-surface text-darinol-muted hover:border-darinol-primary/50 hover:text-darinol-text"].join(" ")}>{category !== "Semua" ? <span className={["h-1.5 w-1.5 rounded-full", active ? "bg-white" : style.dot].join(" ")} /> : null}{category === "Semua" ? t.all : category.replace(/_/g, " ")}</button>; })}
+          {categoryFilters.map((category) => { const active = activeCategory === category; const style = getCategoryStyle(category, activeRadar === "culture"); return <button key={category} type="button" onClick={() => onCategoryChange(category)} aria-pressed={active} className={["tap-target flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[15px] font-semibold transition", active ? "border-darinol-primary bg-darinol-primaryFill text-white" : "border-darinol-border bg-darinol-surface text-darinol-muted hover:border-darinol-primary/50 hover:text-darinol-text"].join(" ")}>{category !== "Semua" ? <span className={["h-1.5 w-1.5 rounded-full", active ? "bg-white" : style.dot].join(" ")} /> : null}{category === "Semua" ? t.all : category.replace(/_/g, " ")}</button>; })}
         </div>
       </div>
     </div>

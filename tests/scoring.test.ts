@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SCORE_CEILING, SCORE_FLOOR, growthLabel, scoreTopic } from "@/lib/scoring";
+import { SCORE_CEILING, SCORE_FLOOR, scoreTopic } from "@/lib/scoring";
 
 const NOW = Date.parse("2026-07-30T12:00:00Z");
 const hoursAgo = (h: number) => NOW - h * 36e5;
@@ -99,12 +99,5 @@ describe("scoreTopic", () => {
     });
 
     expect(future).toBe(exact);
-  });
-});
-
-describe("growthLabel", () => {
-  it("formats as a percentage and caps at 380%", () => {
-    expect(growthLabel({ articleCount: 1, sourceCount: 1 })).toBe("+150%");
-    expect(growthLabel({ articleCount: 99, sourceCount: 99 })).toBe("+380%");
   });
 });

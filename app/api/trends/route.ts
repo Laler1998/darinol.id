@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { articleSlug, fetchRssArticles, isRssSource } from "@/lib/rss";
 import { fetchCultureTrends, sampleCultureTrends, type RadarType } from "@/lib/culture-trends";
-import { growthLabel, scoreTopic } from "@/lib/scoring";
-import type { Topic, TopicArticle } from "@/lib/types";
+import { scoreTopic } from "@/lib/scoring";
+import type { NewsMarket, Topic, TopicArticle } from "@/lib/types";
+import { applyHistoricalGrowth } from "@/lib/trend-history";
 
 type NewsArticle = {
   source?: { name?: string | null };
@@ -85,7 +86,8 @@ const fallbackTopics: Topic[] = [
     category: "Peristiwa",
     radar_type: "news",
     score: 99,
-    growth: "+380%",
+    growth: "Mengumpulkan baseline",
+    data_status: "fallback",
     whyViral: [
       "Banyak pencarian terkait aksi dan kondisi terbaru hari ini.",
       "Topik peristiwa lokal cepat menyebar lewat potongan video pendek.",
@@ -102,7 +104,8 @@ const fallbackTopics: Topic[] = [
     category: "Technology",
     radar_type: "news",
     score: 96,
-    growth: "+310%",
+    growth: "Mengumpulkan baseline",
+    data_status: "fallback",
     whyViral: [
       "Tools AI video makin sering dibahas media teknologi.",
       "Perubahan fitur baru biasanya memicu banyak liputan lanjutan.",
@@ -119,7 +122,8 @@ const fallbackTopics: Topic[] = [
     category: "Business",
     radar_type: "news",
     score: 91,
-    growth: "+220%",
+    growth: "Mengumpulkan baseline",
+    data_status: "fallback",
     whyViral: [
       "Pergerakan kurs cepat memengaruhi percakapan bisnis dan belanja harian.",
       "Media ekonomi rutin mengangkat dampaknya ke pasar dan masyarakat.",
@@ -136,7 +140,8 @@ const fallbackTopics: Topic[] = [
     category: "Sports",
     radar_type: "news",
     score: 89,
-    growth: "+205%",
+    growth: "Mengumpulkan baseline",
+    data_status: "fallback",
     whyViral: [
       "Topik sepak bola nasional punya basis percakapan yang besar.",
       "Update pemain, jadwal, dan hasil pertandingan cepat dibahas ulang.",
@@ -153,7 +158,8 @@ const fallbackTopics: Topic[] = [
     category: "Crypto",
     radar_type: "news",
     score: 92,
-    growth: "+320%",
+    growth: "Mengumpulkan baseline",
+    data_status: "fallback",
     whyViral: [
       "Pencarian meningkat dalam 48 jam terakhir.",
       "Banyak media nasional dan global membahas topik ini.",
@@ -170,7 +176,8 @@ const fallbackTopics: Topic[] = [
     category: "Politics",
     radar_type: "news",
     score: 86,
-    growth: "+175%",
+    growth: "Mengumpulkan baseline",
+    data_status: "fallback",
     whyViral: [
       "Kebijakan pemerintah sering menjadi bahan diskusi publik.",
       "Media nasional mengangkat respons dari berbagai pihak.",
@@ -187,7 +194,8 @@ const fallbackTopics: Topic[] = [
     category: "Technology",
     radar_type: "news",
     score: 84,
-    growth: "+160%",
+    growth: "Mengumpulkan baseline",
+    data_status: "fallback",
     whyViral: [
       "Produk dan algoritma Google berdampak langsung ke bisnis digital.",
       "Update teknologi besar biasanya cepat dibahas media global.",
@@ -204,7 +212,8 @@ const fallbackTopics: Topic[] = [
     category: "Entertainment",
     radar_type: "news",
     score: 81,
-    growth: "+140%",
+    growth: "Mengumpulkan baseline",
+    data_status: "fallback",
     whyViral: [
       "Rilis film, trailer, dan respons penonton cepat menjadi percakapan.",
       "Media hiburan memberi liputan review dan box office.",
@@ -221,7 +230,8 @@ const fallbackTopics: Topic[] = [
     category: "Global",
     radar_type: "news",
     score: 80,
-    growth: "+130%",
+    growth: "Mengumpulkan baseline",
+    data_status: "fallback",
     whyViral: [
       "Isu global sering menjadi percakapan lintas negara.",
       "Media internasional dan nasional memberi pembaruan berkala.",
@@ -757,6 +767,34 @@ async function fetchYouTubeSignalArticles(): Promise<NewsArticle[]> {
   return settled.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
 }
 
+async function fetchWorldSignalArticles(): Promise<NewsArticle[]> {
+  const now = new Date();
+  const start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const url = new URL("https://api.gdeltproject.org/api/v2/doc/doc");
+  url.searchParams.set("query", "(geopolitics OR economy OR markets OR technology OR climate OR conflict)");
+  url.searchParams.set("mode", "artlist");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("maxrecords", "60");
+  url.searchParams.set("sort", "hybridrel");
+  url.searchParams.set("startdatetime", gdeltDate(start));
+  url.searchParams.set("enddatetime", gdeltDate(now));
+
+  const [gdelt, hackerNews, crypto] = await Promise.all([
+    fetchJson<{ articles?: GdeltArticle[] }>(url.toString(), 8000).then((payload) => (payload.articles ?? []).map((article) => ({
+      source: { name: article.domain ? `GDELT - ${article.domain}` : "GDELT" },
+      title: article.title ?? null,
+      description: article.sourcecountry ? `Global coverage: ${article.sourcecountry}` : null,
+      url: article.url ?? null,
+      publishedAt: toGdeltPublishedAt(article.seendate),
+    }))),
+    fetchHackerNewsArticles(),
+    fetchCryptoMarketArticles(),
+
+  ]);
+
+  // Metadata and outbound links only: no publisher-page scraping or article storage.
+  return [...gdelt, ...hackerNews, ...crypto];
+}
 async function fetchFastSignalArticles() {
   const settled = await Promise.allSettled([
     fetchGoogleNewsArticles(),
@@ -792,7 +830,7 @@ function extractTopicName(article: NewsArticle) {
   return titleCase(words.join(" ") || "Topik Hari Ini");
 }
 
-function buildTopics(articles: NewsArticle[]) {
+function buildTopics(articles: NewsArticle[], market: NewsMarket = "indonesia") {
   const seenArticleUrls = new Set<string>();
   const seenArticleTitles = new Set<string>();
   const sourceUsage = new Map<string, number>();
@@ -869,15 +907,17 @@ function buildTopics(articles: NewsArticle[]) {
         newestPublishedAt: group.newest,
         now,
       });
-      const growth = growthLabel({ articleCount, sourceCount });
 
       return {
         id: slugify(group.name),
         name: group.name,
         category: group.category,
         radar_type: "news",
+        market,
+        verified: sourceCount >= 2,
         score,
-        growth,
+        growth: "Mengumpulkan baseline",
+        data_status: "live",
         total_articles: articleCount,
         total_sources: sourceCount,
         whyViral: [
@@ -891,6 +931,8 @@ function buildTopics(articles: NewsArticle[]) {
           url: article.url ?? "#",
           publishedAt: article.publishedAt ?? null,
           description: article.description ?? null,
+          market,
+          language: market === "world" ? "Global" : "Indonesia",
           slug: article.title && article.source?.name && isRssSource(article.source.name)
             ? articleSlug(article.title, article.source.name)
             : undefined,
@@ -929,15 +971,16 @@ function buildTopics(articles: NewsArticle[]) {
     .slice(0, 28);
 }
 
-function filterTopicsByRadar(topics: Topic[], radarType: RadarType | "all") {
+function filterTopicsByRadar(topics: Topic[], radarType: RadarType | "world" | "all") {
   if (radarType === "all") return topics;
+  if (radarType === "world") return topics.filter((topic) => topic.market === "world");
   return topics.filter((topic) => topic.radar_type === radarType);
 }
 
-function getRadarType(request: Request): RadarType | "all" {
+function getRadarType(request: Request): RadarType | "world" | "all" {
   const value = new URL(request.url).searchParams.get("radar_type");
 
-  if (value === "news" || value === "culture") return value;
+  if (value === "news" || value === "world" || value === "culture") return value;
   return "all";
 }
 
@@ -949,7 +992,7 @@ function buildTrendsPayload({
 }: {
   source: string;
   topics: Topic[];
-  radarType: RadarType | "all";
+  radarType: RadarType | "world" | "all";
   error?: string;
 }) {
   const mixedTopics = topics.length
@@ -958,13 +1001,54 @@ function buildTrendsPayload({
       ? sampleCultureTrends
       : topics;
 
+  const normalizedTopics = filterTopicsByRadar(mixedTopics as Topic[], radarType).map((topic) => ({
+    ...topic,
+    data_status: topic.is_sample
+      ? "sample" as const
+      : topic.data_status ?? (source.includes("fallback") ? "fallback" as const : "live" as const),
+  }));
+  const distinctStatuses = new Set(normalizedTopics.map((topic) => topic.data_status));
+
   return {
     source,
     updatedAt: new Date().toISOString(),
     radar_type: radarType,
+    data_status: distinctStatuses.size > 1
+      ? "partial"
+      : distinctStatuses.has("sample")
+        ? "sample"
+        : distinctStatuses.has("fallback")
+          ? "fallback"
+          : "live",
     error,
-    topics: filterTopicsByRadar(mixedTopics as Topic[], radarType),
+    topics: normalizedTopics,
   };
+}
+
+async function trendsResponse(payload: ReturnType<typeof buildTrendsPayload>, init?: ResponseInit) {
+  try {
+    const history = await applyHistoricalGrowth(payload.topics);
+    return trendsJson({ ...payload, history_status: history.history_status, topics: history.topics }, init);
+  } catch (error) {
+    console.error(
+      "Trend history lookup failed.",
+      error instanceof Error ? error.message : "Unknown database error",
+    );
+    return trendsJson({
+      ...payload,
+      history_status: "unavailable",
+      topics: payload.topics.map((topic) => ({
+        ...topic,
+        growth: topic.data_status === "live" && topic.radar_type === "news"
+          ? "Riwayat tidak tersedia"
+          : "Belum diukur",
+        growth_percent: null,
+        growth_status: topic.data_status === "live" && topic.radar_type === "news"
+          ? "unavailable" as const
+          : "not_measured" as const,
+      })),
+    }, init);
+  }
 }
 
 export async function GET(request: Request) {
@@ -972,6 +1056,14 @@ export async function GET(request: Request) {
   const apiKey = process.env.NEWS_API_KEY;
   const country = process.env.NEWS_COUNTRY ?? "id";
   const pageSize = process.env.NEWS_PAGE_SIZE ?? "40";
+  if (radarType === "world") {
+    const topics = buildTopics(await fetchWorldSignalArticles().catch(() => []), "world");
+    return trendsResponse(buildTrendsPayload({
+      source: topics.length ? "gdelt+hacker-news+coingecko" : "world-fallback",
+      topics: topics.length ? topics : fallbackTopics.map((topic) => ({ ...topic, market: "world" as const })),
+      radarType,
+    }));
+  }
   const culturePayloadPromise =
     radarType === "culture" || radarType === "all"
       ? fetchCultureTrends().catch(() => ({
@@ -993,7 +1085,7 @@ export async function GET(request: Request) {
 
     const culturePayload = await culturePayloadPromise;
 
-    return trendsJson(buildTrendsPayload({
+    return trendsResponse(buildTrendsPayload({
       source: topics.length ? "fast-free" : "fallback",
       topics: culturePayload && radarType !== "news"
         ? ([...culturePayload.topics, ...newsTopics] as Topic[])
@@ -1060,7 +1152,7 @@ export async function GET(request: Request) {
     const articles = [...newsApiArticles, ...rssArticles, ...fastSignalArticles];
     const topics = buildTopics(articles);
 
-    return trendsJson(buildTrendsPayload({
+    return trendsResponse(buildTrendsPayload({
       source: topics.length
         ? fastSignalArticles.length
           ? newsApiArticles.length
@@ -1085,31 +1177,22 @@ export async function GET(request: Request) {
     const topics = buildTopics([...rssArticles, ...fastSignalArticles]);
 
     if (topics.length) {
-      return trendsJson({
+      return trendsResponse(buildTrendsPayload({
         source: fastSignalArticles.length ? "fast-free" : "rss",
-        updatedAt: new Date().toISOString(),
-        radar_type: radarType,
-        topics: filterTopicsByRadar(
-          (radarType === "culture"
-            ? sampleCultureTrends
-            : radarType === "all"
-              ? [...sampleCultureTrends, ...topics]
-              : topics) as Topic[],
-          radarType,
-        ),
-      });
+        topics: radarType === "culture"
+          ? sampleCultureTrends
+          : radarType === "all"
+            ? [...sampleCultureTrends, ...topics]
+            : topics,
+        radarType,
+      }));
     }
 
-    return trendsJson(
-      {
-        ...buildTrendsPayload({
-          source: "fallback",
-          topics: fallbackTopics,
-          radarType,
-          error: error instanceof Error ? error.message : "Unknown news fetch error",
-        }),
-      },
-      { status: 200 },
-    );
+    return trendsResponse(buildTrendsPayload({
+      source: "fallback",
+      topics: fallbackTopics,
+      radarType,
+      error: error instanceof Error ? error.message : "Unknown news fetch error",
+    }), { status: 200 });
   }
 }

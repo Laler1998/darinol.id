@@ -46,6 +46,44 @@ export function getTopicLabel(topic: Topic) {
   return topic.category;
 }
 
+export function getGrowthLabel(topic: Topic, language: "id" | "en") {
+  if (topic.data_status === "sample" || topic.data_status === "fallback") {
+    return language === "id" ? "Belum diukur" : "Not measured";
+  }
+
+  switch (topic.growth_status) {
+    case "measured":
+      return `${typeof topic.growth_percent === "number" && topic.growth_percent >= 0 ? "+" : ""}${topic.growth_percent ?? 0}%`;
+    case "new":
+      return language === "id" ? "Baru muncul" : "New";
+    case "collecting":
+      return language === "id" ? "Mengumpulkan baseline" : "Collecting baseline";
+    case "not_measured":
+      return language === "id" ? "Belum diukur" : "Not measured";
+    case "unavailable":
+      return topic.growth === "Riwayat belum aktif"
+        ? language === "id" ? "Riwayat belum diaktifkan" : "History not configured"
+        : language === "id" ? "Riwayat tidak tersedia" : "History unavailable";
+    default:
+      return topic.growth;
+  }
+}
+
+export function getDataStatusLabel(topic: Topic, language: "id" | "en") {
+  switch (topic.data_status) {
+    case "live":
+      return language === "id" ? "LIVE" : "LIVE";
+    case "stale":
+      return language === "id" ? "DATA LAMA" : "STALE";
+    case "sample":
+      return language === "id" ? "CONTOH" : "SAMPLE";
+    case "fallback":
+      return language === "id" ? "CADANGAN" : "FALLBACK";
+    default:
+      return null;
+  }
+}
+
 export function buildLatestFeed(topics: Topic[], limit = 60): FeedArticle[] {
   const seen = new Set<string>();
   const feed: FeedArticle[] = [];

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildLatestFeed,
   formatRelativeTime,
+  getDataStatusLabel,
+  getGrowthLabel,
   getMomentumLabel,
   getTopicLabel,
   groupByRecency,
@@ -135,6 +137,23 @@ describe("getTopicLabel", () => {
     expect(
       getTopicLabel(topic({ radar_type: "culture", culture_category: "internet_slang" })),
     ).toBe("internet slang");
+  });
+});
+
+describe("trend quality labels", () => {
+  it("shows only measured growth percentages and labels the baseline period", () => {
+    expect(getGrowthLabel(topic({ growth_status: "measured", growth_percent: 25 }), "id")).toBe("+25%");
+    expect(getGrowthLabel(topic({ growth_status: "measured", growth_percent: -10 }), "en")).toBe("-10%");
+    expect(getGrowthLabel(topic({ growth_status: "collecting" }), "id")).toBe("Mengumpulkan baseline");
+    expect(getGrowthLabel(topic({ growth_status: "unavailable", growth: "Riwayat belum aktif" }), "en")).toBe("History not configured");
+    expect(getGrowthLabel(topic({ data_status: "sample", growth: "+180%" }), "en")).toBe("Not measured");
+  });
+
+  it("identifies live, cached, fallback, and sample trend data", () => {
+    expect(getDataStatusLabel(topic({ data_status: "live" }), "id")).toBe("LIVE");
+    expect(getDataStatusLabel(topic({ data_status: "stale" }), "en")).toBe("STALE");
+    expect(getDataStatusLabel(topic({ data_status: "fallback" }), "id")).toBe("CADANGAN");
+    expect(getDataStatusLabel(topic({ data_status: "sample" }), "id")).toBe("CONTOH");
   });
 });
 

@@ -1263,7 +1263,7 @@ body { font-size: 16px; line-height: 1.5; letter-spacing: -0.008em; }
 .font-heading, h1, h2, h3 { font-family: var(--font-display), "Space Grotesk", sans-serif; letter-spacing: -0.035em; }
 .font-heading { font-weight: 600; }
 p { text-wrap: pretty; }
-@media (max-width: 767px) { body { font-size: 15px; } }
+@media (max-width: 767px) { body { font-size: 16px; } }
 
 /* Focused dark hierarchy: one signal gets the visual emphasis, supporting UI stays quiet. */
 .dark {
@@ -1304,9 +1304,9 @@ p { text-wrap: pretty; }
 
 @media (max-width: 767px) {
   .sticky.top-0 > div:first-child { min-height: 3.5rem; padding-left: 1rem; padding-right: 1rem; }
-  .sticky.top-0 > div.md\\:hidden { padding-top: 0.45rem; padding-bottom: 0.45rem; }
-  .sticky.top-0 > div.md\\:hidden nav button { height: 2rem; padding-left: 0.65rem; padding-right: 0.65rem; }
-  .sticky.top-0 > div.md\\:hidden nav button svg { width: 0.85rem; height: 0.85rem; }
+  .sticky.top-0 > div.md\:hidden { padding-top: 0.45rem; padding-bottom: 0.45rem; }
+  .sticky.top-0 > div.md\:hidden nav button { height: 2.75rem; padding-left: 0.8rem; padding-right: 0.8rem; font-size: 0.875rem; }
+  .sticky.top-0 > div.md\:hidden nav button svg { width: 1rem; height: 1rem; }
   section[aria-label="Ringkasan radar"] { gap: 0.55rem; padding-top: 1.25rem; padding-bottom: 1.25rem; }
   section[aria-label="Ringkasan radar"] > div { min-height: 0; padding: 0.85rem; }
   section[aria-label="Ringkasan radar"] > div p:nth-child(2) { margin-top: 0.35rem; font-size: 1.6rem; }
@@ -1521,7 +1521,7 @@ p { text-wrap: pretty; }
 .feed-group-enter, .feed-item-enter { animation: feed-enter 280ms ease-out both; }
 @keyframes feed-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 
-.article-meta { font-size: 0.75rem; }
+.article-meta { font-size: 0.875rem; }
 
 @media (prefers-reduced-motion: reduce) {
   .signal-enter, .momentum-fill, .topic-detail-enter, .live-status i, .feed-group-enter, .feed-item-enter { animation: none; }

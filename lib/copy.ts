@@ -1,6 +1,6 @@
 export type Language = "id" | "en";
 export type ThemeMode = "light" | "dark";
-export type MainView = "radar" | "latest" | "culture";
+export type MainView = "radar" | "world" | "latest" | "culture";
 
 export const copy = {
   id: {
@@ -10,7 +10,8 @@ export const copy = {
     search: "Cari topik, sumber, atau berita",
     topics: "sinyal",
     all: "Semua",
-    newsRadar: "Berita",
+    newsRadar: "Indonesia",
+    worldRadar: "Dunia",
     cultureRadar: "Sosial & Kreator",
     allRadar: "Semua",
     newsRadarHint:
@@ -64,7 +65,8 @@ export const copy = {
     search: "Search topics, sources, or news",
     topics: "signals",
     all: "All",
-    newsRadar: "News",
+    newsRadar: "Indonesia",
+    worldRadar: "World",
     cultureRadar: "Social & Creators",
     allRadar: "All",
     newsRadarHint:

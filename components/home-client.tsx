@@ -20,7 +20,7 @@ type CachedPayload = TrendsPayload & { cachedAt?: number };
 type HomeClientProps = { initialPayload: TrendsPayload };
 
 export default function HomeClient({ initialPayload }: HomeClientProps) {
-  const initialRadar = initialPayload.radar_type === "culture" ? "culture" : "news";
+  const initialRadar: RadarFilter = initialPayload.radar_type === "culture" || initialPayload.radar_type === "world" ? initialPayload.radar_type : "news";
   const [topics, setTopics] = useState<Topic[]>(initialPayload.topics ?? []);
   const [selectedId, setSelectedId] = useState<string | null>(initialPayload.topics?.[0]?.id ?? null);
   const [search, setSearch] = useState("");
@@ -116,7 +116,12 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
     if (!options.skipCache) {
       const cached = getCachedPayload(radar);
       if (cached) {
-        applyPayload(cached);
+        applyPayload({
+          ...cached,
+          topics: cached.topics.map((topic) => topic.data_status === "live"
+            ? { ...topic, data_status: "stale" }
+            : topic),
+        });
         setShowStaleData(true);
         setLoading(false);
       }
@@ -152,7 +157,7 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
 
   const query = search.trim().toLowerCase();
   const filteredTopics = useMemo(() => topics.filter((topic) => {
-    const matchesRadar = activeRadar === "all" || topic.radar_type === activeRadar;
+    const matchesRadar = activeRadar === "all" || (activeRadar === "world" ? topic.market === "world" : topic.radar_type === activeRadar);
     const searchable = `${topic.name} ${topic.category} ${topic.culture_category ?? ""} ${topic.articles.map((article) => article.title).join(" ")}`.toLowerCase();
     const matchesSearch = !query || searchable.includes(query);
     const matchesCategory = activeCategory === "Semua" || topic.category === activeCategory || topic.culture_category === activeCategory;
@@ -223,8 +228,8 @@ export default function HomeClient({ initialPayload }: HomeClientProps) {
       <AppShell search={search} onSearchChange={setSearch} updatedAt={updatedAtIso ? formatClock(updatedAtIso, language) : "—"} onRefresh={() => { trackFunnel("radar_refresh_requested", { radar: activeRadar }); void loadTrends(activeRadar, { skipCache: true }); }} refreshing={loading} activeView={activeView} onViewChange={setActiveView} language={language} onLanguageChange={setLanguage} themeMode={themeMode} onThemeToggle={() => setThemeMode((currentTheme) => currentTheme === "dark" ? "light" : "dark")} activeRadar={activeRadar} onRadarChange={handleSelectRadar} t={t} />
       <div className="min-w-0 px-4 py-6 sm:px-6 lg:px-10 lg:py-9 xl:px-14">
         {showStaleData || dataSource.includes("fallback") || dataSource.includes("sample") ? <div role="status" className="mb-4 flex items-center gap-2 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs font-medium text-darinol-muted"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />{showStaleData ? "Menampilkan data terakhir sambil memperbarui radar." : "Sebagian data menggunakan sumber cadangan."}</div> : null}{loadFailed ? <div role="alert" className="mb-6 flex flex-col gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><p className="flex items-center gap-2 text-sm font-medium text-darinol-text"><AlertIcon className="h-4 w-4 text-rose-600 dark:text-rose-400" />{t.loadFailed}</p><button type="button" onClick={() => void loadTrends(activeRadar, { skipCache: true })} className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-darinol-primaryFill px-4 text-xs font-semibold text-white"><RefreshIcon className="h-3.5 w-3.5" />{t.refresh}</button></div> : null}
-        <main id="main" className="mx-auto w-full max-w-[1440px]">
-          <header className="border-b border-darinol-border/70 pb-5"><div><p className="text-xs font-medium text-darinol-muted">Darinol / <span className="text-darinol-text">{activeView === "radar" ? t.radarTab : activeView === "culture" ? t.cultureRadar : t.latestTab}</span></p><h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight text-darinol-text sm:text-4xl">{activeView === "radar" ? "Sinyal yang layak ditindaklanjuti" : activeView === "culture" ? "Sinyal sosial yang layak dieksplorasi" : t.latestTab}</h1>{activeView !== "latest" ? <p className="mt-2 max-w-2xl text-sm text-darinol-muted">{activeView === "culture" ? "Pantau percakapan, format konten, dan peluang kreator yang sedang bergerak." : "Mulai dari sinyal teratas, pilih topik, lalu baca bukti dan sumber yang menggerakkannya."}</p> : null}</div></header>
+        <main id="main" className="w-full">
+          <header className="border-b border-darinol-border/70 pb-5"><div><p className="text-xs font-medium text-darinol-muted">Darinol / <span className="text-darinol-text">{activeView === "radar" ? t.newsRadar : activeView === "world" ? t.worldRadar : activeView === "culture" ? t.cultureRadar : t.latestTab}</span></p><h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight text-darinol-text sm:text-4xl">{activeView === "radar" ? "Sinyal Indonesia yang layak ditindaklanjuti" : activeView === "world" ? "Sinyal dunia yang perlu dipantau" : activeView === "culture" ? "Sinyal sosial yang layak dieksplorasi" : t.latestTab}</h1>{activeView !== "latest" ? <p className="mt-2 max-w-2xl text-sm text-darinol-muted">{activeView === "culture" ? "Pantau percakapan, format konten, dan peluang kreator yang sedang bergerak." : activeView === "world" ? "Pantau perkembangan global dengan sumber asli, wilayah, dan status verifikasi yang jelas." : "Mulai dari sinyal teratas, pilih topik, lalu baca bukti dan sumber yang menggerakkannya."}</p> : null}</div></header>
           {activeView !== "latest" ? <div key={activeView} data-page={activeView} className="page-view-enter"><section id="radar-section" className="scroll-mt-6"><div className="space-y-5"><TopicList topics={filteredTopics} totalCount={filteredTopics.length} selectedTopicId={selectedTopic?.id ?? null} activeRadar={activeRadar} isCulture={activeView === "culture"} selectedCategories={selectedCategories} onCategoryPreferenceChange={handleCategoryPreferenceChange} onResetCategories={handleResetCategories} onRadarChange={handleSelectRadar} categoryFilters={categoryFilters} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onSelectTopic={handleSelectTopic} loading={loading} search={search} onSearchChange={setSearch} language={language} t={t} /><div className="dashboard-summary"><section className="grid gap-3 py-6 sm:grid-cols-3" aria-label="Ringkasan radar"><div className="rounded-xl border border-darinol-border/70 bg-darinol-surface p-4"><p className="text-xs font-medium text-darinol-muted">{activeView === "culture" ? t.cultureScore : "Skor tertinggi"}</p><p className="mt-2 font-heading text-3xl font-semibold tabular-nums text-darinol-primaryInk">{highestScore}</p><p className="mt-1 text-xs text-darinol-muted">{highestTopic}</p></div><div className="rounded-xl border border-darinol-border/70 bg-darinol-surface p-4"><p className="text-xs font-medium text-darinol-muted">{activeView === "culture" ? t.opportunityScore : "Sumber aktif"}</p><p className="mt-2 font-heading text-3xl font-semibold tabular-nums text-darinol-text">{activeView === "culture" ? highestOpportunity : totalSources}</p><p className="mt-1 text-xs text-darinol-success">{activeView === "culture" ? "Peluang teratas saat ini" : "Dari topik yang terpantau"}</p></div><div className="rounded-xl border border-darinol-border/70 bg-darinol-surface p-4"><p className="text-xs font-medium text-darinol-muted">{activeView === "culture" ? "Konten terpantau" : "Berita masuk"}</p><p className="mt-2 font-heading text-3xl font-semibold tabular-nums text-darinol-text">{totalArticles}</p><p className="mt-1 text-xs text-darinol-muted">Update berkala</p></div></section></div><div ref={detailRef} key={selectedTopic?.id ?? "empty"} className="topic-detail-enter mx-auto w-full max-w-5xl"><TopicDetail topic={selectedTopic} loading={loading} language={language} onNextTopic={handleNextTopic} t={t} /></div></div></section></div> : <section key="latest" className="page-view-enter pt-6"><LatestFeed articles={latestFeed} loading={loading} language={language} t={t} /></section>}
         </main>
       </div>

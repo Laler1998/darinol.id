@@ -4,7 +4,7 @@ import { ArticleRow } from "./article-row";
 import { ArticleRowSkeleton } from "./skeletons";
 import { InboxIcon } from "./icons";
 import { getCategoryStyle } from "@/lib/categories";
-import { getTopicLabel } from "@/lib/format";
+import { getDataStatusLabel, getGrowthLabel, getTopicLabel } from "@/lib/format";
 import type { Copy, Language } from "@/lib/copy";
 import type { Topic } from "@/lib/types";
 
@@ -54,6 +54,13 @@ export function TopicDetail({
 
   const isCulture = topic.radar_type === "culture";
   const label = getTopicLabel(topic);
+  const dataStatusLabel = getDataStatusLabel(topic, language);
+  const growthLabel = getGrowthLabel(topic, language);
+  const growthClass = topic.growth_status === "measured" && (topic.growth_percent ?? 0) > 0
+    ? "bg-darinol-success/10 text-emerald-700 dark:text-emerald-300"
+    : topic.growth_status === "measured" && (topic.growth_percent ?? 0) < 0
+      ? "bg-rose-500/10 text-rose-700 dark:text-rose-300"
+      : "bg-darinol-muted/10 text-darinol-muted";
   const style = getCategoryStyle(topic.category, isCulture);
   const articleCount = topic.total_articles ?? topic.articles.length;
   const sourceCount =
@@ -73,10 +80,19 @@ export function TopicDetail({
           >
             {label}
           </span>
-          <span className="rounded-md bg-darinol-success/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-            {topic.growth}
+          <span           className={`rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${growthClass}`}>
+            {growthLabel}
           </span>
-          {topic.is_sample ? (
+          {dataStatusLabel ? (
+            <span className="rounded-md border border-darinol-border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-darinol-muted">
+              {dataStatusLabel}
+            </span>
+          ) : null}
+          {!isCulture && topic.market ? (
+            <span className="rounded-md bg-darinol-muted/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-darinol-muted">
+              {topic.market === "world" ? "Dunia" : "Indonesia"} · {topic.verified ? "Terverifikasi lintas sumber" : "Satu sumber — perlu verifikasi"}
+            </span>
+          ) : null}          {topic.is_sample ? (
             <span className="rounded-md bg-darinol-muted/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-darinol-muted">
               {t.cultureSample}
             </span>
@@ -140,6 +156,7 @@ export function TopicDetail({
               <ArticleRow
                 key={`${article.source}-${article.url}`}
                 article={article}
+                categoryLabel={label}
                 language={language}
               />
             ))}
