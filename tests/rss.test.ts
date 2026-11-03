@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { articleSlug, normalizeArticleSlug, stripArticleHashSuffix } from "@/lib/rss";
+import { articleSlug, matchesArticleSlug, normalizeArticleSlug } from "@/lib/rss";
 
 describe("articleSlug", () => {
   it("creates unique slugs when the same title appears from the same source", () => {
@@ -9,16 +9,22 @@ describe("articleSlug", () => {
 
     expect(first).not.toBe(second);
     expect(first.startsWith(`${base}-`)).toBe(true);
-    expect(stripArticleHashSuffix(first)).toBe(base);
-    expect(stripArticleHashSuffix(second)).toBe(base);
+    expect(matchesArticleSlug({
+      title: "Bitcoin Naik",
+      source: { name: "Detik News" },
+      url: "https://example.com/1",
+    }, first)).toBe(true);
   });
 
-  it("keeps compatibility with legacy article slugs without a hash suffix", () => {
-    const legacy = "bitcoin-naik-detik-news";
-    const hashed = "bitcoin-naik-detik-news-abc123";
+  it("matches legacy slugs whose source name looks like a hash suffix", () => {
+    const article = {
+      title: "Bitcoin's volatility curve has a midterm bump",
+      source: { name: "CoinDesk" },
+      url: "https://example.com/article",
+    };
+    const legacySlug = "bitcoin-s-volatility-curve-has-a-midterm-bump-coindesk";
 
-    expect(stripArticleHashSuffix(legacy)).toBe("bitcoin-naik-detik-news");
-    expect(stripArticleHashSuffix(hashed)).toBe("bitcoin-naik-detik-news");
-    expect(stripArticleHashSuffix("bitcoin-naik-detik-news-2024")).toBe("bitcoin-naik-detik-news-2024");
+    expect(matchesArticleSlug(article, legacySlug)).toBe(true);
+    expect(matchesArticleSlug(article, `${legacySlug}-wrong`)).toBe(false);
   });
 });

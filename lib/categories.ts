@@ -23,21 +23,45 @@ const CATEGORY_STYLES: Record<string, CategoryStyle> = {
     chip: "bg-rose-500/10 text-rose-700 dark:bg-rose-400/15 dark:text-rose-300",
     dot: "bg-rose-500",
   },
+  Health: {
+    chip: "bg-red-500/10 text-red-700 dark:bg-red-400/15 dark:text-red-300",
+    dot: "bg-red-500",
+  },
+  Education: {
+    chip: "bg-indigo-500/10 text-indigo-700 dark:bg-indigo-400/15 dark:text-indigo-300",
+    dot: "bg-indigo-500",
+  },
+  Climate: {
+    chip: "bg-lime-500/10 text-lime-800 dark:bg-lime-400/15 dark:text-lime-300",
+    dot: "bg-lime-500",
+  },
+  Science: {
+    chip: "bg-cyan-500/10 text-cyan-700 dark:bg-cyan-400/15 dark:text-cyan-300",
+    dot: "bg-cyan-500",
+  },
+  Food: {
+    chip: "bg-orange-500/10 text-orange-800 dark:bg-orange-400/15 dark:text-orange-300",
+    dot: "bg-orange-500",
+  },
+  Travel: {
+    chip: "bg-sky-500/10 text-sky-700 dark:bg-sky-400/15 dark:text-sky-300",
+    dot: "bg-sky-500",
+  },
   Business: {
     chip: "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300",
     dot: "bg-emerald-500",
   },
   Technology: {
-    chip: "bg-sky-500/10 text-sky-700 dark:bg-sky-400/15 dark:text-sky-300",
-    dot: "bg-sky-500",
+    chip: "bg-violet-500/10 text-violet-700 dark:bg-violet-400/15 dark:text-violet-300",
+    dot: "bg-violet-500",
   },
   Crypto: {
     chip: "bg-amber-500/10 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300",
     dot: "bg-amber-500",
   },
   Politics: {
-    chip: "bg-violet-500/10 text-violet-700 dark:bg-violet-400/15 dark:text-violet-300",
-    dot: "bg-violet-500",
+    chip: "bg-pink-500/10 text-pink-700 dark:bg-pink-400/15 dark:text-pink-300",
+    dot: "bg-pink-500",
   },
   Sports: {
     chip: "bg-teal-500/10 text-teal-700 dark:bg-teal-400/15 dark:text-teal-300",
@@ -52,8 +76,8 @@ const CATEGORY_STYLES: Record<string, CategoryStyle> = {
     dot: "bg-blue-500",
   },
   Social: {
-    chip: "bg-indigo-500/10 text-indigo-700 dark:bg-indigo-400/15 dark:text-indigo-300",
-    dot: "bg-indigo-500",
+    chip: "bg-yellow-500/10 text-yellow-800 dark:bg-yellow-400/15 dark:text-yellow-300",
+    dot: "bg-yellow-500",
   },
   General: FALLBACK,
 };

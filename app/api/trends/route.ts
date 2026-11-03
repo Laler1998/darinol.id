@@ -4,6 +4,7 @@ import { fetchCultureTrends, sampleCultureTrends, type RadarType } from "@/lib/c
 import { scoreTopic } from "@/lib/scoring";
 import type { NewsMarket, Topic, TopicArticle } from "@/lib/types";
 import { applyHistoricalGrowth } from "@/lib/trend-history";
+import { isLowQualityHeadline } from "@/lib/news-quality";
 
 type NewsArticle = {
   source?: { name?: string | null };
@@ -73,7 +74,7 @@ function trendsJson(payload: unknown, init?: ResponseInit) {
     "Cache-Control",
     payloadRadarType === "culture"
       ? "public, s-maxage=180, stale-while-revalidate=600"
-      : "public, s-maxage=300, stale-while-revalidate=900",
+      : "public, s-maxage=60, stale-while-revalidate=300",
   );
 
   return response;
@@ -351,7 +352,6 @@ const preferredTopics = [
   "Liga Indonesia",
   "Piala Dunia",
   "KPK",
-  "Jakarta",
   "Demo",
   "Unjuk Rasa",
   "Mahasiswa",
@@ -366,6 +366,12 @@ const preferredTopics = [
 const categoryKeywords: Array<[string, string[]]> = [
   ["Social", ["reddit", "viral post", "thread"]],
   ["Peristiwa", ["demo", "unjuk rasa", "mahasiswa", "aksi", "massa", "polisi", "kecelakaan", "kebakaran", "banjir", "gempa", "longsor", "macet", "ditangkap", "kriminal", "korban", "evakuasi"]],
+  ["Health", ["kesehatan", "health", "bpjs", "kemenkes", "rumah sakit", "penyakit", "vaksin", "obat", "dokter"]],
+  ["Education", ["pendidikan", "education", "sekolah", "kampus", "universitas", "beasiswa", "mahasiswa"]],
+  ["Climate", ["iklim", "climate", "cuaca ekstrem", "perubahan iklim", "lingkungan", "emisi", "karhutla"]],
+  ["Science", ["sains", "science", "penelitian", "riset", "antariksa", "space", "NASA", "ilmuwan"]],
+  ["Food", ["kuliner", "makanan", "food", "restoran", "masakan", "resep"]],
+  ["Travel", ["pariwisata", "wisata", "travel", "destinasi", "hotel", "penerbangan"]],
   ["Crypto", ["bitcoin", "crypto", "kripto", "ethereum", "blockchain", "solana", "binance", "coinbase", "token", "stablecoin"]],
   ["Sports", ["timnas", "bola", "sepak", "liga", "pemain", "pertandingan", "piala dunia", "world cup", "football", "soccer", "sports", "nba", "motogp"]],
   ["Technology", ["ai", "openai", "nvidia", "teknologi", "video", "aplikasi", "startup", "digital", "software", "chip", "iphone", "google", "microsoft"]],
@@ -505,7 +511,7 @@ async function fetchJson<T>(url: string, timeoutMs = 7000) {
       next: { revalidate: 60 },
       headers: {
         Accept: "application/json",
-        "User-Agent": "Darinol.id Trend Dashboard/0.1",
+        "User-Agent": "Darinol Trend Dashboard/0.1",
       },
     });
 
@@ -519,12 +525,25 @@ async function fetchJson<T>(url: string, timeoutMs = 7000) {
   }
 }
 
-function googleNewsUrl(query: string) {
+type GoogleNewsLocale = {
+  hl: string;
+  gl: string;
+  ceid: string;
+};
+
+type GoogleNewsSearch = {
+  query: string;
+  locale: GoogleNewsLocale;
+};
+
+const indonesiaGoogleNewsLocale = { hl: "id", gl: "ID", ceid: "ID:id" };
+
+function googleNewsUrl({ query, locale }: GoogleNewsSearch) {
   const url = new URL("https://news.google.com/rss/search");
   url.searchParams.set("q", `${query} when:1d`);
-  url.searchParams.set("hl", "id");
-  url.searchParams.set("gl", "ID");
-  url.searchParams.set("ceid", "ID:id");
+  url.searchParams.set("hl", locale.hl);
+  url.searchParams.set("gl", locale.gl);
+  url.searchParams.set("ceid", locale.ceid);
   return url.toString();
 }
 
@@ -583,8 +602,7 @@ function getGoogleNewsPublisher(title?: string | null) {
   return publisher ? `Google News - ${publisher}` : "Google News";
 }
 
-async function fetchGoogleNewsArticles(): Promise<NewsArticle[]> {
-  const queries = [
+const indonesiaGoogleNewsSearches: GoogleNewsSearch[] = [
     "viral Indonesia",
     "berita hari ini",
     "demo OR unjuk rasa OR aksi mahasiswa hari ini",
@@ -602,18 +620,35 @@ async function fetchGoogleNewsArticles(): Promise<NewsArticle[]> {
     "olahraga OR sports OR sepak bola OR football OR NBA OR MotoGP",
     "film OR musik OR konser OR entertainment OR celebrity OR drama",
     "global news OR world news",
-  ];
+    "kesehatan OR BPJS OR Kemenkes OR rumah sakit",
+    "pendidikan OR sekolah OR kampus OR beasiswa",
+    "cuaca ekstrem OR perubahan iklim OR lingkungan OR karhutla",
+    "kuliner OR makanan viral OR restoran Indonesia",
+    "pariwisata OR destinasi wisata OR travel Indonesia",
+    "sains OR penelitian OR antariksa Indonesia",
+  ].map((query) => ({ query, locale: indonesiaGoogleNewsLocale }));
 
+const worldGoogleNewsSearches: GoogleNewsSearch[] = [
+  { query: "world news geopolitics", locale: { hl: "en", gl: "US", ceid: "US:en" } },
+  { query: "technology AI markets science climate", locale: { hl: "en", gl: "US", ceid: "US:en" } },
+  { query: "world news economy technology climate", locale: { hl: "en", gl: "GB", ceid: "GB:en" } },
+  { query: "Singapore Malaysia ASEAN news economy", locale: { hl: "en", gl: "SG", ceid: "SG:en" } },
+  { query: "Malaysia ASEAN technology health climate", locale: { hl: "en", gl: "MY", ceid: "MY:en" } },
+];
+
+async function fetchGoogleNewsArticles(
+  searches: GoogleNewsSearch[] = indonesiaGoogleNewsSearches,
+): Promise<NewsArticle[]> {
   const feeds = await Promise.allSettled(
-    queries.map(async (query) => {
+    searches.map(async (search) => {
       const { default: Parser } = await import("rss-parser");
       const parser = new Parser({
         timeout: 7000,
         headers: {
-          "User-Agent": "Darinol.id Trend Dashboard/0.1",
+          "User-Agent": "Darinol Trend Dashboard/0.1",
         },
       });
-      const feed = await parser.parseURL(googleNewsUrl(query));
+      const feed = await parser.parseURL(googleNewsUrl(search));
 
       return feed.items.slice(0, 4).map(
         (item): NewsArticle => ({
@@ -627,7 +662,8 @@ async function fetchGoogleNewsArticles(): Promise<NewsArticle[]> {
     }),
   );
 
-  return feeds.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
+  return feeds.flatMap((result) => result.status === "fulfilled" ? result.value : [])
+    .filter((article) => !isLowQualityHeadline(article.title, article.source?.name, article.url));
 }
 
 async function fetchGdeltArticles(): Promise<NewsArticle[]> {
@@ -779,7 +815,8 @@ async function fetchWorldSignalArticles(): Promise<NewsArticle[]> {
   url.searchParams.set("startdatetime", gdeltDate(start));
   url.searchParams.set("enddatetime", gdeltDate(now));
 
-  const [gdelt, hackerNews, crypto] = await Promise.all([
+  const results = await Promise.allSettled([
+    fetchGoogleNewsArticles(worldGoogleNewsSearches),
     fetchJson<{ articles?: GdeltArticle[] }>(url.toString(), 8000).then((payload) => (payload.articles ?? []).map((article) => ({
       source: { name: article.domain ? `GDELT - ${article.domain}` : "GDELT" },
       title: article.title ?? null,
@@ -789,22 +826,20 @@ async function fetchWorldSignalArticles(): Promise<NewsArticle[]> {
     }))),
     fetchHackerNewsArticles(),
     fetchCryptoMarketArticles(),
-
   ]);
 
   // Metadata and outbound links only: no publisher-page scraping or article storage.
-  return [...gdelt, ...hackerNews, ...crypto];
+  return results.flatMap((result) => result.status === "fulfilled" ? result.value : [])
+    .filter((article) => !isLowQualityHeadline(article.title, article.source?.name, article.url));
 }
 async function fetchFastSignalArticles() {
   const settled = await Promise.allSettled([
     fetchGoogleNewsArticles(),
-    fetchGdeltArticles(),
-    fetchHackerNewsArticles(),
-    fetchCryptoMarketArticles(),
     fetchYouTubeSignalArticles(),
   ]);
 
-  return settled.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
+  return settled.flatMap((result) => result.status === "fulfilled" ? result.value : [])
+    .filter((article) => !isLowQualityHeadline(article.title, article.source?.name, article.url));
 }
 
 function extractTopicName(article: NewsArticle) {
@@ -849,6 +884,7 @@ function buildTopics(articles: NewsArticle[], market: NewsMarket = "indonesia") 
   articles
     .filter(isTodayArticle)
     .filter((article) => article.title && article.url)
+    .filter((article) => !isLowQualityHeadline(article.title, article.source?.name, article.url))
     .forEach((article) => {
       const source = article.source?.name ?? "News";
       const baseSource = source.replace(/^Google News -\s*/, "");
@@ -943,6 +979,12 @@ function buildTopics(articles: NewsArticle[], market: NewsMarket = "indonesia") 
 
   const categoryMinimums: Record<string, number> = {
     Technology: 4,
+    Health: 2,
+    Education: 2,
+    Climate: 2,
+    Science: 2,
+    Food: 2,
+    Travel: 2,
     Peristiwa: 5,
     Business: 4,
     Crypto: 3,

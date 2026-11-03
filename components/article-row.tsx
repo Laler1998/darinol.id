@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { ExternalIcon } from "./icons";
 import { getCategoryStyle } from "@/lib/categories";
+import { categoryName, copy } from "@/lib/copy";
 import { formatRelativeTime } from "@/lib/format";
+import { isLowQualityHeadline } from "@/lib/news-quality";
 import { trackFunnel } from "@/lib/analytics";
 import type { Language } from "@/lib/copy";
 import type { TopicArticle } from "@/lib/types";
@@ -24,11 +26,13 @@ export function ArticleRow({
   isCulture?: boolean;
   language: Language;
 }) {
-  const hasSource = Boolean(article.url) && article.url !== "#";
+  const t = copy[language];
   const style = getCategoryStyle(categoryLabel ?? "", isCulture);
   const [relativeTime, setRelativeTime] = useState("—");
-  const title = article.title?.trim() || (language === "id" ? "Berita terbaru" : "Latest news");
-  const sourceName = article.source?.trim() || (language === "id" ? "Sumber berita" : "News source");
+  const title = article.title?.trim() || t.latestNewsFallback;
+  const sourceName = article.source?.trim() || t.sourceFallback;
+  if (isLowQualityHeadline(title, sourceName, article.url)) return null;
+  const hasSource = Boolean(article.url) && article.url !== "#";
 
   useEffect(() => {
     setRelativeTime(formatRelativeTime(article.publishedAt, language));
@@ -52,11 +56,11 @@ export function ArticleRow({
               style.chip,
             ].join(" ")}
           >
-            {categoryLabel}
+            {categoryName(categoryLabel, language)}
           </span>
         ) : null}
         <span className="grid h-4 w-4 place-items-center rounded-sm bg-darinol-primary/15 text-[9px] font-bold text-darinol-primaryInk" aria-hidden="true">{sourceInitial}</span><span className="truncate">{sourceName}</span>
-        {article.market ? <><span aria-hidden="true">·</span><span>{article.market === "world" ? "Dunia" : "Indonesia"}</span></> : null}
+        {article.market ? <><span aria-hidden="true">·</span><span>{article.market === "world" ? t.worldRadar : t.indonesia}</span></> : null}
         <span aria-hidden="true">·</span>
         <time dateTime={article.publishedAt ?? undefined} className="tabular-nums">
           {relativeTime}
@@ -75,7 +79,7 @@ export function ArticleRow({
 
   return (
     <a
-      href={article.slug ? `/artikel/${article.slug}?source=${encodeURIComponent(article.url)}` : article.url}
+      href={article.slug ? `/artikel/${article.slug}` : article.url}
       target={article.slug ? undefined : "_blank"}
       rel={article.slug ? undefined : "noreferrer"}
       onClick={() => trackFunnel("source_opened", { source: sourceName, category: categoryLabel ?? "unknown", is_culture: isCulture })}

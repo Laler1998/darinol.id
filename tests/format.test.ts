@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildLatestFeed,
+  formatClock,
   formatRelativeTime,
   getDataStatusLabel,
   getGrowthLabel,
@@ -9,6 +10,7 @@ import {
   groupByRecency,
 } from "@/lib/format";
 import type { FeedArticle, Topic } from "@/lib/types";
+import { categoryName, copy } from "@/lib/copy";
 
 const NOW = Date.now();
 const minutesAgo = (m: number) => new Date(NOW - m * 60000).toISOString();
@@ -131,22 +133,34 @@ describe("formatRelativeTime", () => {
   });
 });
 
+describe("formatClock", () => {
+  it("formats update timestamps in WIB regardless of the runtime timezone", () => {
+    const formatted = formatClock("2026-10-17T00:00:00.000Z", "id");
+
+    expect(formatted).toContain("07.00");
+    expect(formatted).toContain("WIB");
+  });
+});
+
 describe("getTopicLabel", () => {
   it("uses the category for news and the culture category for culture", () => {
-    expect(getTopicLabel(topic())).toBe("Crypto");
-    expect(
-      getTopicLabel(topic({ radar_type: "culture", culture_category: "internet_slang" })),
-    ).toBe("internet slang");
+    expect(getTopicLabel(topic())).toBe("Kripto");
+    expect(categoryName("Peristiwa", "en")).toBe("Events");
+    expect(copy.en.articleCountText(1)).toBe("1 article");
+    expect(copy.en.articleCountText(2)).toBe("2 articles");
+    expect(copy.en.sourceCountText(1)).toBe("1 source");
+    expect(getTopicLabel(topic({ radar_type: "culture", culture_category: "internet_slang" }))).toBe("Bahasa internet");
+    expect(getTopicLabel(topic({ radar_type: "culture", culture_category: "internet_slang" }), "en")).toBe("Internet slang");
   });
 });
 
 describe("trend quality labels", () => {
-  it("shows only measured growth percentages and labels the baseline period", () => {
+  it("shows measured growth but hides an unavailable baseline", () => {
     expect(getGrowthLabel(topic({ growth_status: "measured", growth_percent: 25 }), "id")).toBe("+25%");
     expect(getGrowthLabel(topic({ growth_status: "measured", growth_percent: -10 }), "en")).toBe("-10%");
-    expect(getGrowthLabel(topic({ growth_status: "collecting" }), "id")).toBe("Mengumpulkan baseline");
-    expect(getGrowthLabel(topic({ growth_status: "unavailable", growth: "Riwayat belum aktif" }), "en")).toBe("History not configured");
-    expect(getGrowthLabel(topic({ data_status: "sample", growth: "+180%" }), "en")).toBe("Not measured");
+    expect(getGrowthLabel(topic({ growth_status: "collecting" }), "id")).toBeNull();
+    expect(getGrowthLabel(topic({ growth_status: "unavailable", growth: "Riwayat belum aktif" }), "en")).toBeNull();
+    expect(getGrowthLabel(topic({ data_status: "sample", growth: "+180%" }), "en")).toBeNull();
   });
 
   it("identifies live, cached, fallback, and sample trend data", () => {

@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ServiceWorker } from "@/components/service-worker";
+import { BRAND_NAME } from "@/lib/brand";
 import "./globals.css";
 
 
@@ -11,8 +12,8 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.darinol.online"
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Darinol.id - Radar Tren dan Berita Terbaru",
-    template: "%s | Darinol.id",
+    default: `${BRAND_NAME} - Radar Tren dan Berita Terbaru`,
+    template: `%s | ${BRAND_NAME}`,
   },
   description:
     "Pantau topik yang sedang naik dan baca berita terbaru dari puluhan sumber media dalam satu layar.",
@@ -37,8 +38,8 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  applicationName: "Darinol.id",
-  manifest: "/site.webmanifest?v=8",
+  applicationName: BRAND_NAME,
+  manifest: "/site.webmanifest?v=9",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
@@ -59,17 +60,17 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "Darinol.id - Radar Tren dan Berita Terbaru",
+    title: `${BRAND_NAME} - Radar Tren dan Berita Terbaru`,
     description:
       "Pantau topik yang sedang naik dan baca berita terbaru dari puluhan sumber media dalam satu layar.",
     url: siteUrl,
-    siteName: "Darinol.id",
+    siteName: BRAND_NAME,
     images: [
       {
         url: "/darinol-og.png",
         width: 1200,
         height: 630,
-        alt: "Darinol.id",
+        alt: BRAND_NAME,
       },
     ],
     locale: "id_ID",
@@ -77,7 +78,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Darinol.id - Radar Tren dan Berita Terbaru",
+    title: `${BRAND_NAME} - Radar Tren dan Berita Terbaru`,
     description:
       "Pantau topik yang sedang naik dan baca berita terbaru dari puluhan sumber media dalam satu layar.",
     images: ["/darinol-og.png"],
@@ -99,7 +100,7 @@ const structuredData = {
       "@type": "WebSite",
       "@id": `${siteUrl}/#website`,
       url: siteUrl,
-      name: "Darinol.id",
+      name: BRAND_NAME,
       description:
         "Pantau topik yang sedang naik dan baca berita terbaru dari puluhan sumber media dalam satu layar.",
       inLanguage: "id-ID",
@@ -108,7 +109,7 @@ const structuredData = {
     {
       "@type": "Organization",
       "@id": `${siteUrl}/#organization`,
-      name: "Darinol.id",
+      name: BRAND_NAME,
       url: siteUrl,
       logo: {
         "@type": "ImageObject",
@@ -141,7 +142,7 @@ export default function RootLayout({
           // the new dark-first design doesn't flash light on every load.
           dangerouslySetInnerHTML={{
             __html:
-              "try{var m=localStorage.getItem('darinol-theme');document.documentElement.classList.toggle('dark', m !== 'light');}catch(e){document.documentElement.classList.add('dark');}",
+              "try{var m=localStorage.getItem('darinol-theme');document.documentElement.classList.toggle('dark', m === 'dark');}catch(e){document.documentElement.classList.remove('dark');}",
           }}
         />
         {children}

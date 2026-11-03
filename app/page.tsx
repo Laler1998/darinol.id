@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import HomeClient from "@/components/home-client";
+import { getActiveSponsors } from "@/lib/sponsors";
 import type { TrendsPayload } from "@/lib/types";
 
 const emptyPayload: TrendsPayload = {
@@ -34,6 +35,7 @@ async function getInitialPayload(): Promise<TrendsPayload> {
 
 export default async function Page() {
   const initialPayload = await getInitialPayload();
+  const initialSponsors = getActiveSponsors();
 
-  return <HomeClient initialPayload={initialPayload} />;
+  return <HomeClient initialPayload={initialPayload} initialSponsors={initialSponsors} />;
 }

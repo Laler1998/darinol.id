@@ -13,7 +13,7 @@ export type NormalizedRssArticle = {
 const parser = new Parser({
   timeout: 8000,
   headers: {
-    "User-Agent": "Darinol.id Trend Dashboard/0.1",
+    "User-Agent": "Darinol Trend Dashboard/0.1",
   },
 });
 
@@ -177,10 +177,6 @@ export function normalizeArticleSlug(value: string) {
     .slice(0, 120);
 }
 
-export function stripArticleHashSuffix(value: string) {
-  return value.replace(/-[a-z0-9]{5,}$/i, "").replace(/-+$/g, "");
-}
-
 export function articleSlug(title: string, source: string, url?: string) {
   const base = normalizeArticleSlug(`${title}-${source}`);
 
@@ -191,6 +187,19 @@ export function articleSlug(title: string, source: string, url?: string) {
     .toString(36);
 
   return `${base}-${hash}`.slice(0, 150);
+}
+
+export function matchesArticleSlug(
+  article: Pick<NormalizedRssArticle, "title" | "source" | "url">,
+  slug: string,
+) {
+  if (!article.title || !article.source.name) return false;
+
+  const normalizedBase = normalizeArticleSlug(`${article.title}-${article.source.name}`);
+  return (
+    articleSlug(article.title, article.source.name, article.url ?? undefined) === slug ||
+    normalizedBase === slug
+  );
 }
 
 async function fetchRssArticlesUncached() {
@@ -246,19 +255,11 @@ export async function findRssArticle(slug: string) {
   const historicalArticle = articleHistory.get(slug);
   if (historicalArticle) return historicalArticle;
 
-  const baseSlug = stripArticleHashSuffix(slug);
-  const historicalLegacyArticle = baseSlug && baseSlug !== slug ? articleHistory.get(baseSlug) : null;
-  if (historicalLegacyArticle) return historicalLegacyArticle;
-
   const articles = await fetchRssArticles();
 
   return (
-    articles.find((article) => {
-      if (!article.title || !article.source.name) return false;
-
-      const generated = articleSlug(article.title, article.source.name, article.url ?? undefined);
-      const normalizedBase = normalizeArticleSlug(`${article.title}-${article.source.name}`);
-      return generated === slug || generated === baseSlug || normalizedBase === baseSlug;
-    }) ?? articleHistory.get(baseSlug) ?? null
+    articles.find((article) => matchesArticleSlug(article, slug)) ??
+    articleHistory.get(slug) ??
+    null
   );
 }

@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1500" viewBox="0 0 2000 1500" role="img" aria-labelledby="title desc">
-  <title id="title">Darinol.online Trend Radar Pro Member card</title>
+  <title id="title">Darinol Trend Radar Pro member card</title>
   <desc id="desc">Premium dark glassmorphism member card with Darinol orange and magenta glow.</desc>
   <defs>
     <linearGradient id="stage" x1="0" y1="0" x2="1" y2="1">
@@ -79,7 +79,7 @@
     <rect width="76" height="76" rx="20" fill="#ff7a45"/>
     <path d="M24 55V21h10v24h18c8 0 12-3 12-9s-4-9-12-9H42v-6h12c16 0 24 5 24 15s-8 19-25 19H24Z" fill="#1b0b05"/>
   </g>
-  <text x="622" y="456" fill="#ffffff" font-family="Space Grotesk, Helvetica Neue, Arial, sans-serif" font-size="45" font-weight="600" letter-spacing="1">Darinol<tspan fill="#ff9a73">.online</tspan></text>
+  <text x="622" y="456" fill="#ffffff" font-family="Space Grotesk, Helvetica Neue, Arial, sans-serif" font-size="45" font-weight="600" letter-spacing="1">Darinol</text>
 
   <text x="520" y="590" fill="#ffffff" fill-opacity="0.62" font-family="DM Sans, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="600" letter-spacing="5">TREND INTELLIGENCE NETWORK</text>
   <text x="520" y="820" fill="#ffffff" font-family="Space Grotesk, Helvetica Neue, Arial, sans-serif" font-size="54" font-weight="500" letter-spacing="10">••••  ••••  ••••  2026</text>

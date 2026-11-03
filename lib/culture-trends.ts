@@ -412,7 +412,7 @@ async function fetchJson<T>(url: string, timeoutMs = 8000) {
       next: { revalidate: 300 },
       headers: {
         Accept: "application/json",
-        "User-Agent": "Darinol.id Culture Radar/0.1",
+        "User-Agent": "Darinol Culture Radar/0.1",
       },
     });
 

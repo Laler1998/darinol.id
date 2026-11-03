@@ -10,7 +10,7 @@ export function getTrendRadarModel() {
     apiKey,
     headers: {
       "HTTP-Referer": "https://www.darinol.online",
-      "X-Title": "Darinol.id Trend Radar",
+      "X-Title": "Darinol Trend Radar",
     },
   });
 

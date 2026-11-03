@@ -1,5 +1,5 @@
 /**
- * Darinol.id service worker.
+ * Darinol service worker.
  *
  * Strategy is deliberately network-first for anything that can go stale — a news
  * reader showing yesterday's headlines is worse than one that fails loudly. The

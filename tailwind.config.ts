@@ -26,8 +26,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        heading: ["var(--font-display)", "Space Grotesk", "sans-serif"],
-        body: ["var(--font-text)", "DM Sans", "sans-serif"],
+        heading: ["var(--font-display)", "Bricolage Grotesque", "sans-serif"],
+        body: ["var(--font-text)", "JetBrains Mono", "monospace"],
+        mono: ["var(--font-data)", "JetBrains Mono", "monospace"],
       },
       boxShadow: {
         soft: "0 18px 45px rgba(26, 26, 26, 0.06)",

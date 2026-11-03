@@ -34,7 +34,7 @@ export function LatestFeed({
           <p className="mt-1 text-xs font-medium text-darinol-muted">{t.latestHint}</p>
         </div>
         <span className="text-[11px] font-semibold tabular-nums text-darinol-muted">
-          {articles.length} {t.articles}
+          {t.articleCountText(articles.length)}
         </span>
       </header>
 

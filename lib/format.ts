@@ -1,12 +1,16 @@
 import type { FeedArticle, Topic } from "./types";
+import { categoryName, copy, type Language } from "./copy";
 
 export function formatClock(value: string, language: "id" | "en" = "id") {
-  return new Intl.DateTimeFormat(language === "id" ? "id-ID" : "en-GB", {
+  const formatted = new Intl.DateTimeFormat(language === "id" ? "id-ID" : "en-GB", {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Jakarta",
   }).format(new Date(value));
+
+  return `${formatted} WIB`;
 }
 
 export function formatRelativeTime(value: string | null, language: "id" | "en") {
@@ -33,52 +37,51 @@ export function formatRelativeTime(value: string | null, language: "id" | "en") 
 }
 
 export function getMomentumLabel(score: number, language: "id" | "en") {
-  if (score >= 85) return language === "id" ? "Sangat ramai" : "Very hot";
-  if (score >= 70) return language === "id" ? "Naik cepat" : "Rising fast";
-  return language === "id" ? "Mulai ramai" : "Picking up";
+  const t = copy[language];
+  if (score >= 85) return t.veryHot;
+  if (score >= 70) return t.risingFast;
+  return t.pickingUp;
 }
 
-export function getTopicLabel(topic: Topic) {
+export function getTopicLabel(topic: Topic, language: Language = "id") {
   if (topic.radar_type === "culture") {
-    return topic.culture_category?.replace(/_/g, " ") ?? "culture";
+    return categoryName(topic.culture_category ?? "culture", language);
   }
 
-  return topic.category;
+  return categoryName(topic.category, language);
 }
 
 export function getGrowthLabel(topic: Topic, language: "id" | "en") {
-  if (topic.data_status === "sample" || topic.data_status === "fallback") {
-    return language === "id" ? "Belum diukur" : "Not measured";
-  }
+  const t = copy[language];
+  if (topic.data_status === "sample" || topic.data_status === "fallback") return null;
 
   switch (topic.growth_status) {
     case "measured":
       return `${typeof topic.growth_percent === "number" && topic.growth_percent >= 0 ? "+" : ""}${topic.growth_percent ?? 0}%`;
     case "new":
-      return language === "id" ? "Baru muncul" : "New";
+      return t.newTrend;
     case "collecting":
-      return language === "id" ? "Mengumpulkan baseline" : "Collecting baseline";
+      return null;
     case "not_measured":
-      return language === "id" ? "Belum diukur" : "Not measured";
+      return null;
     case "unavailable":
-      return topic.growth === "Riwayat belum aktif"
-        ? language === "id" ? "Riwayat belum diaktifkan" : "History not configured"
-        : language === "id" ? "Riwayat tidak tersedia" : "History unavailable";
+      return null;
     default:
       return topic.growth;
   }
 }
 
 export function getDataStatusLabel(topic: Topic, language: "id" | "en") {
+  const t = copy[language];
   switch (topic.data_status) {
     case "live":
-      return language === "id" ? "LIVE" : "LIVE";
+      return t.liveStatus;
     case "stale":
-      return language === "id" ? "DATA LAMA" : "STALE";
+      return t.staleStatus;
     case "sample":
-      return language === "id" ? "CONTOH" : "SAMPLE";
+      return t.sampleStatus;
     case "fallback":
-      return language === "id" ? "CADANGAN" : "FALLBACK";
+      return t.fallbackStatus;
     default:
       return null;
   }
@@ -97,7 +100,7 @@ export function buildLatestFeed(topics: Topic[], limit = 60): FeedArticle[] {
         ...article,
         topicId: topic.id,
         topicName: topic.name,
-        category: getTopicLabel(topic),
+        category: topic.culture_category ?? topic.category,
         radarType: topic.radar_type,
       });
     });
