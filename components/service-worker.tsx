@@ -11,6 +11,12 @@ export function ServiceWorker() {
     if (process.env.NODE_ENV !== "production") return;
     if (!("serviceWorker" in navigator)) return;
 
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    const reloadAfterUpdate = () => {
+      if (hadController) window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", reloadAfterUpdate, { once: true });
+
     const register = () => {
       void navigator.serviceWorker.register("/sw.js").catch(() => {
         // Registration failing is not fatal; the app works without it.
@@ -22,8 +28,12 @@ export function ServiceWorker() {
       register();
     } else {
       window.addEventListener("load", register, { once: true });
-      return () => window.removeEventListener("load", register);
     }
+
+    return () => {
+      window.removeEventListener("load", register);
+      navigator.serviceWorker.removeEventListener("controllerchange", reloadAfterUpdate);
+    };
   }, []);
 
   return null;

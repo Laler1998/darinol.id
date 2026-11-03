@@ -10,7 +10,8 @@
  *   /api/trends -> network first, fall back to the last successful response
  *   static      -> cache first (Next.js fingerprints these, so they never change)
  */
-const VERSION = "v2";
+// Bump this on deployments to discard static assets cached by older builds.
+const VERSION = "v3";
 const SHELL_CACHE = `darinol-shell-${VERSION}`;
 const DATA_CACHE = `darinol-data-${VERSION}`;
 const STATIC_CACHE = `darinol-static-${VERSION}`;
