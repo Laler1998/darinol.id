@@ -1895,7 +1895,7 @@ p { text-wrap: pretty; }
 .terminal-home .topic-filter-bar { grid-area: filters; }
 .terminal-home .signal-list-heading { grid-area: heading; align-self: end; }
 .terminal-home .signal-featured-list { grid-area: cards; min-width: 0; width: 100%; }
-.terminal-home .radar-overview-column { grid-area: overview; display: grid; align-content: start; gap: 0.75rem; }
+.terminal-home .radar-overview-column { grid-area: overview; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 0.75rem; }
 .terminal-home .recent-trends { grid-area: recent; }
 .terminal-home .sponsor-slot { grid-area: sponsor; }
 .terminal-home .radar-overview-column > .sponsor-slot,

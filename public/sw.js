@@ -11,7 +11,7 @@
  *   static      -> cache first (Next.js fingerprints these, so they never change)
  */
 // Bump this on deployments to discard static assets cached by older builds.
-const VERSION = "v3";
+const VERSION = "v4";
 const SHELL_CACHE = `darinol-shell-${VERSION}`;
 const DATA_CACHE = `darinol-data-${VERSION}`;
 const STATIC_CACHE = `darinol-static-${VERSION}`;
