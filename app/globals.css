@@ -2201,22 +2201,45 @@ p { text-wrap: pretty; }
   .terminal-home .radar-workspace {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "filters"
-      "heading"
-      "cards"
+      "primary"
       "overview"
       "recent"
       "sponsor";
   }
+
+  .terminal-home .radar-primary-column {
+    display: grid;
+    grid-area: primary;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+    width: 100%;
+  }
+
+  .terminal-home .topic-list-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "filters"
+      "heading"
+      "cards";
+    min-width: 0;
+    width: 100%;
+  }
+
   .terminal-home .radar-workspace:has(.topic-niche-filter) {
+    grid-template-areas:
+      "primary"
+      "overview"
+      "recent"
+      "sponsor";
+  }
+
+  .terminal-home .topic-list-layout:has(.topic-niche-filter) {
     grid-template-areas:
       "filters"
       "niche"
       "heading"
-      "cards"
-      "overview"
-      "recent"
-      "sponsor";
+      "cards";
   }
 }
 
