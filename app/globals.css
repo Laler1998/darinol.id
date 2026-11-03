@@ -2199,47 +2199,34 @@ p { text-wrap: pretty; }
 
 @media (max-width: 1023px) {
   .terminal-home .radar-workspace {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "primary"
-      "overview"
-      "recent"
-      "sponsor";
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
   }
 
   .terminal-home .radar-primary-column {
-    display: grid;
-    grid-area: primary;
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     min-width: 0;
     width: 100%;
   }
 
   .terminal-home .topic-list-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "filters"
-      "heading"
-      "cards";
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     min-width: 0;
     width: 100%;
   }
 
-  .terminal-home .radar-workspace:has(.topic-niche-filter) {
-    grid-template-areas:
-      "primary"
-      "overview"
-      "recent"
-      "sponsor";
-  }
-
-  .terminal-home .topic-list-layout:has(.topic-niche-filter) {
-    grid-template-areas:
-      "filters"
-      "niche"
-      "heading"
-      "cards";
+  .terminal-home .radar-overview-column,
+  .terminal-home .radar-workspace > .recent-trends,
+  .terminal-home .radar-workspace > .sponsor-slot {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
   }
 }
 
